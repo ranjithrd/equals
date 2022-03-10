@@ -225,4 +225,18 @@ code {
 #tutorial > div p {
   display: block;
 }
+
+#tutorial {
+  height: 100vh;
+}
+#tutorial object {
+  height: 100%;
+}
+
+.noStyle {
+  text-decoration: none;
+  color: inherit;
+  margin: 1em;
+  padding-bottom: 1em;
+}
 /*# sourceMappingURL=index.ce1d6491.css.map */

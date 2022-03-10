@@ -24873,7 +24873,7 @@ var _react = require("react");
 var _reactDefault = parcelHelpers.interopDefault(_react);
 var _reactRouter = require("react-router");
 var _firebaseJs = require("./firebase.js");
-var _equalsJs = require("./equals.js");
+var _equalsJs = require("../lib/equals.js");
 var _playerJsx = require("./Player.jsx");
 var _playerJsxDefault = parcelHelpers.interopDefault(_playerJsx);
 var _s = $RefreshSig$();
@@ -24893,40 +24893,50 @@ function Game({}) {
     const [loaded, setLoaded] = _react.useState(false);
     const [localState, setLocalState] = _react.useState("schedule");
     const [initialized, setInitialized] = _react.useState(false);
+    const [error1, setError] = _react.useState("");
+    const [gameStarted, setGameStarted] = _react.useState(false);
     console.log("Game render");
     console.log(loaded);
     _react.useEffect(()=>{
         (async ()=>{
-            const playersData = await _firebaseJs.getGame(code);
-            if (playersData) {
-                if (!Object.values(playersData).includes(name)) _firebaseJs.addPlayer(code, name);
-                setPlayers(Object.values(playersData));
-            } else return null;
-            const gameData = await _firebaseJs.getGameData(code);
-            if (gameData) setStarted(true);
-            setLoaded(true);
-            _firebaseJs.listenSch(code, (val)=>{
-                setPlayers([
-                    ...Object.values(val)
-                ]);
-            });
-            _firebaseJs.listenGame(code, (val)=>{
-                console.log("CHANGE IN FIREBASE.");
-                console.log(val);
-                if (JSON.parse(val).initialized && JSON.parse(val).PLAYERS.length === players.length) setInitialized(true);
-                Engine.update(val);
-            });
-            Engine.listen(()=>{
-                console.log("CHANGE IN ENGINE...");
-                console.log("New Engine Data:");
-                console.log(Engine.exportData());
-                _firebaseJs.updateGame(code, JSON.stringify(Engine.exportData()));
-            }, ()=>{
-                console.log("CHANGE IN RENDER...");
-                console.log("New Engine Data:");
-                console.log(Engine.exportData());
-                setData(copyInstance(Engine));
-            });
+            try {
+                console.log("Init");
+                const playersData = await _firebaseJs.getGame(code);
+                if (playersData) {
+                    if (!Object.values(playersData).includes(name)) _firebaseJs.addPlayer(code, name);
+                    setPlayers(Object.values(playersData));
+                } else return null;
+                const gameData = await _firebaseJs.getGameData(code);
+                if (gameData) setStarted(true);
+                setLoaded(true);
+                _firebaseJs.listenSch(code, (val)=>{
+                    setPlayers([
+                        ...Object.values(val)
+                    ]);
+                });
+                _firebaseJs.listenGame(code, (val)=>{
+                    console.log("CHANGE IN FIREBASE.");
+                    console.log(val);
+                    if (val == null) return;
+                    if (!initialized && val) setInitialized(true);
+                    if (!started && val) setStarted(true);
+                    if (JSON.parse(val).initialized && JSON.parse(val).PLAYERS.length === players.length) setInitialized(true);
+                    Engine.update(val);
+                });
+                Engine.listen(()=>{
+                    console.log("CHANGE IN ENGINE...");
+                    console.log("New Engine Data:");
+                    console.log(Engine.exportData());
+                    _firebaseJs.updateGame(code, JSON.stringify(Engine.exportData()));
+                }, ()=>{
+                    console.log("CHANGE IN RENDER...");
+                    console.log("New Engine Data:");
+                    console.log(Engine.exportData());
+                    setData(copyInstance(Engine));
+                });
+            } catch (error) {
+                setError(error);
+            }
         })();
     }, [
         code,
@@ -24943,17 +24953,18 @@ function Game({}) {
             clearInterval(i);
         };
     }, []);
+    console.log("Game has started?", started);
     if (codeNum < 100000 || codeNum > 999999) return(/*#__PURE__*/ _jsxDevRuntime.jsxDEV("main", {
         children: /*#__PURE__*/ _jsxDevRuntime.jsxDEV("h2", {
             children: "Invalid code!"
         }, void 0, false, {
             fileName: "src/Game.jsx",
-            lineNumber: 106,
+            lineNumber: 124,
             columnNumber: 5
         }, this)
     }, void 0, false, {
         fileName: "src/Game.jsx",
-        lineNumber: 105,
+        lineNumber: 123,
         columnNumber: 4
     }, this));
     if (!loaded) return(/*#__PURE__*/ _jsxDevRuntime.jsxDEV("main", {
@@ -24961,29 +24972,29 @@ function Game({}) {
             children: "Loading..."
         }, void 0, false, {
             fileName: "src/Game.jsx",
-            lineNumber: 114,
+            lineNumber: 132,
             columnNumber: 5
         }, this)
     }, void 0, false, {
         fileName: "src/Game.jsx",
-        lineNumber: 113,
+        lineNumber: 131,
         columnNumber: 4
     }, this));
     console.log(data);
     console.log(data.DATA.PLAYERS.length);
     console.log(players.length);
     console.log(initialized);
-    if (data.DATA.PLAYERS.length !== players.length) return(/*#__PURE__*/ _jsxDevRuntime.jsxDEV("main", {
+    if (started && data.DATA.PLAYERS.length !== players.length) return(/*#__PURE__*/ _jsxDevRuntime.jsxDEV("main", {
         children: /*#__PURE__*/ _jsxDevRuntime.jsxDEV("p", {
             children: "Initializing..."
         }, void 0, false, {
             fileName: "src/Game.jsx",
-            lineNumber: 127,
+            lineNumber: 145,
             columnNumber: 5
         }, this)
     }, void 0, false, {
         fileName: "src/Game.jsx",
-        lineNumber: 126,
+        lineNumber: 144,
         columnNumber: 4
     }, this));
     async function handleStart() {
@@ -24992,17 +25003,39 @@ function Game({}) {
         ]);
         Engine.initialize();
         const exportedData = Engine.exportData();
-        await _firebaseJs.updateGame(code, exportedData);
+        await _firebaseJs.updateGame(code, JSON.stringify(exportedData));
         setLocalState("game");
         console.log("Started!");
     }
+    if (error1) return(/*#__PURE__*/ _jsxDevRuntime.jsxDEV("main", {
+        children: [
+            /*#__PURE__*/ _jsxDevRuntime.jsxDEV("h3", {
+                children: "Error"
+            }, void 0, false, {
+                fileName: "src/Game.jsx",
+                lineNumber: 162,
+                columnNumber: 5
+            }, this),
+            /*#__PURE__*/ _jsxDevRuntime.jsxDEV("pre", {
+                children: error1
+            }, void 0, false, {
+                fileName: "src/Game.jsx",
+                lineNumber: 163,
+                columnNumber: 5
+            }, this)
+        ]
+    }, void 0, true, {
+        fileName: "src/Game.jsx",
+        lineNumber: 161,
+        columnNumber: 4
+    }, this));
     if (!started) return(/*#__PURE__*/ _jsxDevRuntime.jsxDEV("main", {
         children: [
             /*#__PURE__*/ _jsxDevRuntime.jsxDEV("h2", {
                 children: "Game not started yet."
             }, void 0, false, {
                 fileName: "src/Game.jsx",
-                lineNumber: 144,
+                lineNumber: 171,
                 columnNumber: 5
             }, this),
             /*#__PURE__*/ _jsxDevRuntime.jsxDEV("button", {
@@ -25010,49 +25043,49 @@ function Game({}) {
                 children: "Start Game?"
             }, void 0, false, {
                 fileName: "src/Game.jsx",
-                lineNumber: 145,
+                lineNumber: 172,
                 columnNumber: 5
             }, this),
             /*#__PURE__*/ _jsxDevRuntime.jsxDEV("p", {
                 children: "New players won't be able to join once you start the game."
             }, void 0, false, {
                 fileName: "src/Game.jsx",
-                lineNumber: 146,
+                lineNumber: 173,
                 columnNumber: 5
             }, this),
             /*#__PURE__*/ _jsxDevRuntime.jsxDEV("div", {
                 className: "spacer"
             }, void 0, false, {
                 fileName: "src/Game.jsx",
-                lineNumber: 149,
+                lineNumber: 176,
                 columnNumber: 5
             }, this),
             /*#__PURE__*/ _jsxDevRuntime.jsxDEV("h3", {
                 children: "Add friends with this code"
             }, void 0, false, {
                 fileName: "src/Game.jsx",
-                lineNumber: 150,
+                lineNumber: 177,
                 columnNumber: 5
             }, this),
             /*#__PURE__*/ _jsxDevRuntime.jsxDEV("code", {
                 children: code
             }, void 0, false, {
                 fileName: "src/Game.jsx",
-                lineNumber: 151,
+                lineNumber: 178,
                 columnNumber: 5
             }, this),
             /*#__PURE__*/ _jsxDevRuntime.jsxDEV("div", {
                 className: "spacer"
             }, void 0, false, {
                 fileName: "src/Game.jsx",
-                lineNumber: 152,
+                lineNumber: 179,
                 columnNumber: 5
             }, this),
             /*#__PURE__*/ _jsxDevRuntime.jsxDEV("p", {
                 children: "Players"
             }, void 0, false, {
                 fileName: "src/Game.jsx",
-                lineNumber: 153,
+                lineNumber: 180,
                 columnNumber: 5
             }, this),
             /*#__PURE__*/ _jsxDevRuntime.jsxDEV("table", {
@@ -25062,12 +25095,12 @@ function Game({}) {
                             children: "Player"
                         }, void 0, false, {
                             fileName: "src/Game.jsx",
-                            lineNumber: 156,
+                            lineNumber: 183,
                             columnNumber: 7
                         }, this)
                     }, void 0, false, {
                         fileName: "src/Game.jsx",
-                        lineNumber: 155,
+                        lineNumber: 182,
                         columnNumber: 6
                     }, this),
                     /*#__PURE__*/ _jsxDevRuntime.jsxDEV("tbody", {
@@ -25076,30 +25109,30 @@ function Game({}) {
                                     children: p
                                 }, void 0, false, {
                                     fileName: "src/Game.jsx",
-                                    lineNumber: 161,
+                                    lineNumber: 188,
                                     columnNumber: 9
                                 }, this)
                             }, void 0, false, {
                                 fileName: "src/Game.jsx",
-                                lineNumber: 160,
+                                lineNumber: 187,
                                 columnNumber: 8
                             }, this)
                         )
                     }, void 0, false, {
                         fileName: "src/Game.jsx",
-                        lineNumber: 158,
+                        lineNumber: 185,
                         columnNumber: 6
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "src/Game.jsx",
-                lineNumber: 154,
+                lineNumber: 181,
                 columnNumber: 5
             }, this)
         ]
     }, void 0, true, {
         fileName: "src/Game.jsx",
-        lineNumber: 143,
+        lineNumber: 170,
         columnNumber: 4
     }, this));
     console.log(data);
@@ -25117,7 +25150,7 @@ function Game({}) {
                 children: "Equals"
             }, void 0, false, {
                 fileName: "src/Game.jsx",
-                lineNumber: 184,
+                lineNumber: 211,
                 columnNumber: 4
             }, this),
             /*#__PURE__*/ _jsxDevRuntime.jsxDEV("div", {
@@ -25130,12 +25163,12 @@ function Game({}) {
                     children: "End game"
                 }, void 0, false, {
                     fileName: "src/Game.jsx",
-                    lineNumber: 186,
+                    lineNumber: 213,
                     columnNumber: 5
                 }, this)
             }, void 0, false, {
                 fileName: "src/Game.jsx",
-                lineNumber: 185,
+                lineNumber: 212,
                 columnNumber: 4
             }, this),
             /*#__PURE__*/ _jsxDevRuntime.jsxDEV(_playerJsxDefault.default, {
@@ -25144,17 +25177,17 @@ function Game({}) {
                 player: name
             }, name, false, {
                 fileName: "src/Game.jsx",
-                lineNumber: 196,
+                lineNumber: 223,
                 columnNumber: 4
             }, this)
         ]
     }, void 0, true, {
         fileName: "src/Game.jsx",
-        lineNumber: 183,
+        lineNumber: 210,
         columnNumber: 3
     }, this));
 }
-_s(Game, "ejaY2oBXP3QRcqDYehNLt2ChUHs=", false, function() {
+_s(Game, "KYOeNz15y9pQmXvk7q9ZBpmVyLo=", false, function() {
     return [
         _reactRouter.useNavigate,
         _reactRouter.useParams
@@ -25170,7 +25203,7 @@ $RefreshReg$(_c, "Game");
   window.$RefreshReg$ = prevRefreshReg;
   window.$RefreshSig$ = prevRefreshSig;
 }
-},{"react/jsx-dev-runtime":"iTorj","react":"21dqq","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","@parcel/transformer-react-refresh-wrap/lib/helpers/helpers.js":"km3Ru","react-router":"btA8E","./firebase.js":"bQFTD","./Player.jsx":"aowtG","./equals.js":"gvAr0"}],"bQFTD":[function(require,module,exports) {
+},{"react/jsx-dev-runtime":"iTorj","react":"21dqq","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","@parcel/transformer-react-refresh-wrap/lib/helpers/helpers.js":"km3Ru","react-router":"btA8E","./firebase.js":"bQFTD","./Player.jsx":"aowtG","../lib/equals.js":"gmHQj"}],"bQFTD":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 parcelHelpers.export(exports, "initialise", ()=>initialise
@@ -25196,7 +25229,7 @@ parcelHelpers.export(exports, "deleteGame", ()=>deleteGame
 var _app = require("firebase/app");
 var _analytics = require("firebase/analytics");
 var _database = require("firebase/database");
-var _equalsJs = require("./equals.js");
+var _equalsJs = require("../lib/equals.js");
 async function initialise() {
     const firebaseConfig = {
         apiKey: "AIzaSyB6mOm2r-gLbSUOoCrmGZmBdLcY1d0ulM8",
@@ -25278,7 +25311,7 @@ async function deleteGame(code) {
     await _database.remove(r);
 }
 
-},{"firebase/app":"5wGMN","firebase/analytics":"gLMpj","firebase/database":"bpqHw","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","./equals.js":"gvAr0"}],"5wGMN":[function(require,module,exports) {
+},{"firebase/app":"5wGMN","firebase/analytics":"gLMpj","firebase/database":"bpqHw","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","../lib/equals.js":"gmHQj"}],"5wGMN":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 var _app = require("@firebase/app");
@@ -42134,16 +42167,25 @@ process.umask = function() {
     return 0;
 };
 
-},{}],"gvAr0":[function(require,module,exports) {
+},{}],"gmHQj":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
+parcelHelpers.export(exports, "repeat", ()=>repeat
+);
+parcelHelpers.export(exports, "randomBetween", ()=>randomBetween
+);
 parcelHelpers.export(exports, "Equals", ()=>Equals
 );
-var _onChange = require("on-change");
-var _onChangeDefault = parcelHelpers.interopDefault(_onChange);
-var _utilJs = require("./util.js");
-// const PLAYERS = ["Player One", "Player Two"]
-// const CARDS_PER_PLAYER = PLAYERS.length < 4 ? 5 : 3
+const repeat = (callback, times)=>{
+    if (times == 0) callback();
+    else {
+        callback();
+        repeat(callback, times - 1);
+    }
+};
+const randomBetween = (min, max)=>{
+    return Math.round(min + Math.random() * (max - min));
+};
 const ACTIONS = {
     out: [],
     play: [
@@ -42215,7 +42257,7 @@ class Equals {
         console.log(d);
         let nd = [];
         for(let i = d.length; i > 0; i--){
-            const ri = _utilJs.randomBetween(0, i - 1);
+            const ri = randomBetween(0, i - 1);
             nd.push(d[ri]);
             d.splice(ri, 1);
         }
@@ -42223,37 +42265,37 @@ class Equals {
     }
      #initializeDeck() {
         let DECK = [];
-        _utilJs.repeat(()=>DECK.push([
+        repeat(()=>DECK.push([
                 RED,
                 1
             ])
         , 6);
-        _utilJs.repeat(()=>DECK.push([
+        repeat(()=>DECK.push([
                 RED,
                 2
             ])
         , 6);
-        _utilJs.repeat(()=>DECK.push([
+        repeat(()=>DECK.push([
                 RED,
                 3
             ])
         , 6);
-        _utilJs.repeat(()=>DECK.push([
+        repeat(()=>DECK.push([
                 BLUE,
                 1
             ])
         , 6);
-        _utilJs.repeat(()=>DECK.push([
+        repeat(()=>DECK.push([
                 BLUE,
                 2
             ])
         , 6);
-        _utilJs.repeat(()=>DECK.push([
+        repeat(()=>DECK.push([
                 BLUE,
                 3
             ])
         , 6);
-        _utilJs.repeat(()=>DECK.push([
+        repeat(()=>DECK.push([
                 GOLD,
                 0
             ])
@@ -42262,7 +42304,7 @@ class Equals {
         DECK = [
             ...nd
         ];
-        const i = _utilJs.randomBetween(0, DECK.length);
+        const i = randomBetween(0, DECK.length);
         this.DATA.STACK = [];
         this.DATA.STACK.push(DECK[i]);
         DECK.splice(i, 1);
@@ -42280,8 +42322,8 @@ class Equals {
                 0
             ]);
             else {
-                let randomIndex = _utilJs.randomBetween(0, this.DATA.DECK.length - 1);
-                while(randomIndex >= this.DATA.DECK.length || this.DATA.DECK[randomIndex][0] === GOLD)randomIndex = _utilJs.randomBetween(0, this.DATA.DECK.length);
+                let randomIndex = randomBetween(0, this.DATA.DECK.length - 1);
+                while(randomIndex >= this.DATA.DECK.length || this.DATA.DECK[randomIndex][0] === GOLD)randomIndex = randomBetween(0, this.DATA.DECK.length);
                 const card = [
                     ...this.DATA.DECK[randomIndex]
                 ];
@@ -42317,8 +42359,10 @@ class Equals {
         this.RENDER?.(this.DATA);
     }
     // UTILITY CHANGE METHODS
-     #setMode(player, mode, all) {
-        if (all) for (let k of this.DATA.PLAYERS)this.DATA.MODES[k] = mode;
+     #setMode(player, mode, all, force) {
+        if (all) {
+            for (let k of this.DATA.PLAYERS)if (this.DATA.MODES[k] !== "spectate" || force === true) this.DATA.MODES[k] = mode;
+        }
         this.DATA.MODES[player] = mode;
     }
      #setPoints(player1, points) {
@@ -42342,16 +42386,22 @@ class Equals {
     // P U B L I C   M E T H O D S
     // NEXT TURN
     nextPlayer(player3) {
-        console.log("Changing to next player	");
+        console.log("Changing to next player");
         console.log("Current Player", player3);
+        console.log("Current mode", this.DATA.MODES[player3]);
         const i = this.DATA.GAME_STATE.order.findIndex((e)=>e === player3
         );
         let reqI = -1;
         if (i + 1 >= this.DATA.GAME_STATE.order.length) reqI = 0;
         else reqI = i + 1;
-        console.log("Next Player", this.DATA.GAME_STATE.order[reqI]);
-        this.#setMode("", "out", true);
+        if (this.DATA.MODES[player3] !== "spectate") this.#setMode(player3, "out", true);
+        if (this.DATA.MODES[this.DATA.GAME_STATE.order[reqI]] === "spectate") {
+            this.nextPlayer(this.DATA.GAME_STATE.order[reqI]);
+            return;
+        }
         this.#setMode(this.DATA.GAME_STATE.order[reqI], "play");
+        console.log("Next Player", this.DATA.GAME_STATE.order[reqI]);
+        console.log(this.DATA.MODES);
     }
     // CALCULATE WINNERS
     calculateWinners() {
@@ -42372,8 +42422,6 @@ class Equals {
     listen(callback, render) {
         this.ON_CHANGE = callback;
         this.RENDER = render;
-        console.log(this.ON_CHANGE);
-        console.log(this.RENDER);
     }
     // INITIALIZE ALL
     initialize() {
@@ -42392,10 +42440,7 @@ class Equals {
     update(json) {
         if (!json) return;
         try {
-            console.log(json);
             let data = JSON.parse(json);
-            console.log("Parsed");
-            console.log(data);
             this.DATA = {
                 ...this.DATA,
                 ...data
@@ -42406,19 +42451,6 @@ class Equals {
         }
     }
     exportData() {
-        // let data = {
-        // 	PLAYERS: this.DATA.PLAYERS,
-        // 	DECK: this.DATA.DECK,
-        // 	STACK: this.DATA.STACK,
-        // 	CARDS_STATE: this.DATA.CARDS_STATE,
-        // 	MODES: this.DATA.MODES,
-        // 	CARDS_PER_PLAYER: this.DATA.CARDS_PER_PLAYER,
-        // 	POINTS: this.DATA.POINTS,
-        // 	GAME_STATE: this.DATA.GAME_STATE,
-        // 	VALUES: this.DATA.VALUES,
-        // }
-        console.log("Export");
-        console.log(this.DATA);
         return this.DATA;
     }
     addPlayer(playerName) {
@@ -42466,9 +42498,6 @@ class Equals {
                 // push player's card
                 this.DATA.STACK.push(data);
                 // replace player's card
-                console.log(this.DATA.DECK);
-                console.log(this.DATA);
-                console.log(this.#randomizeDeck);
                 // reshuffle deck
                 this.DATA.DECK = this.#randomizeDeck(this.DATA.DECK);
                 const dI = this.DATA.CARDS_STATE[player6].findIndex((e)=>e[0] === data[0] && e[1] === data[1]
@@ -42501,12 +42530,11 @@ class Equals {
                 this.#refreshPoints();
                 if (this.DATA.PLAYERS.length > 2) {
                     this.#setMode(player6, "spectate");
-                    this.nextPlayer();
-                } else this.#setMode(player6, "end", true);
+                    this.nextPlayer(player6);
+                } else this.#setMode(player6, "end", true, true);
                 break;
             case "pass":
                 // pass on turn
-                this.#setMode(player6, "out");
                 this.DATA.DECK.splice(-1, 1);
                 this.DATA.STACK.splice(-1, 1);
                 this.DATA.STACK.push(deckCard);
@@ -42523,12 +42551,12 @@ class Equals {
                 break;
             case "final":
                 // end game with points table
-                this.#setMode(player6, "score", true);
+                this.#setMode(player6, "score", true, true);
                 break;
         }
         if (this.DATA.DECK.length < 1) {
             this.#refreshPoints();
-            this.#setMode(player6, "end", true);
+            this.#setMode(player6, "end", true, true);
         }
         console.log("Interaction completed.");
         this.#onChange();
@@ -42607,849 +42635,6 @@ class Equals {
         }
     }
 }
-const t = new Equals([
-    "t"
-]);
-t.initialize();
-t.update('{"PLAYERS":["Ranjith"],"DECK":[[0,0],[1,1],[0,0],[1,1],[-1,1],[1,1],[-1,2],[0,0],[1,3],[-1,2],[-1,2],[1,3],[1,1],[1,2],[1,2],[-1,2],[1,2],[1,3],[-1,2],[0,0],[1,2],[-1,1],[0,0],[-1,2],[-1,1],[-1,1],[1,3],[-1,3],[0,0],[1,3],[-1,3],[-1,3],[1,2],[-1,3],[1,1],[1,2],[0,0],[-1,1],[1,2],[0,0],[1,1],[-1,3],[-1,3],[-1,1],[1,3]],"STACK":[[1,1]],"CARDS_STATE":{"Ranjith":[[-1,3],[1,3],[-1,2],[-1,1],[0,0]]},"MODES":{"Ranjith":"start"},"POINTS":{"Ranjith":0},"GAME_STATE":{"gamesPlayed":0,"order":["Ranjith"],"startPlayer":"Ranjith"},"VALUES":{"Ranjith":3},"initialized":true,"started":false}');
-console.log(t.output("Ranjith"));
-
-},{"on-change":"dzmLG","./util.js":"cgcsT","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"dzmLG":[function(require,module,exports) {
-var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
-parcelHelpers.defineInteropFlag(exports);
-/* eslint-disable unicorn/prefer-spread */ var _constantsJs = require("./lib/constants.js");
-var _isBuiltinJs = require("./lib/is-builtin.js");
-var _pathJs = require("./lib/path.js");
-var _pathJsDefault = parcelHelpers.interopDefault(_pathJs);
-var _isSymbolJs = require("./lib/is-symbol.js");
-var _isSymbolJsDefault = parcelHelpers.interopDefault(_isSymbolJs);
-var _isIteratorJs = require("./lib/is-iterator.js");
-var _isIteratorJsDefault = parcelHelpers.interopDefault(_isIteratorJs);
-var _wrapIteratorJs = require("./lib/wrap-iterator.js");
-var _wrapIteratorJsDefault = parcelHelpers.interopDefault(_wrapIteratorJs);
-var _ignorePropertyJs = require("./lib/ignore-property.js");
-var _ignorePropertyJsDefault = parcelHelpers.interopDefault(_ignorePropertyJs);
-var _cacheJs = require("./lib/cache.js");
-var _cacheJsDefault = parcelHelpers.interopDefault(_cacheJs);
-var _smartCloneJs = require("./lib/smart-clone/smart-clone.js");
-var _smartCloneJsDefault = parcelHelpers.interopDefault(_smartCloneJs);
-const defaultOptions = {
-    equals: Object.is,
-    isShallow: false,
-    pathAsArray: false,
-    ignoreSymbols: false,
-    ignoreUnderscores: false,
-    ignoreDetached: false,
-    details: false
-};
-const onChange = (object, onChange1, options = {
-})=>{
-    options = {
-        ...defaultOptions,
-        ...options
-    };
-    const proxyTarget = Symbol('ProxyTarget');
-    const { equals , isShallow , ignoreDetached , details  } = options;
-    const cache = new _cacheJsDefault.default(equals);
-    const hasOnValidate = typeof options.onValidate === 'function';
-    const smartClone = new _smartCloneJsDefault.default(hasOnValidate);
-    // eslint-disable-next-line max-params
-    const validate = (target, property, value, previous, applyData)=>!hasOnValidate || smartClone.isCloning || options.onValidate(_pathJsDefault.default.concat(cache.getPath(target), property), value, previous, applyData) === true
-    ;
-    const handleChangeOnTarget = (target, property, value, previous)=>{
-        if (!_ignorePropertyJsDefault.default(cache, options, property) && !(ignoreDetached && cache.isDetached(target, object))) handleChange(cache.getPath(target), property, value, previous);
-    };
-    // eslint-disable-next-line max-params
-    const handleChange = (changePath, property, value, previous, applyData)=>{
-        if (smartClone.isCloning) smartClone.update(changePath, property, previous);
-        else onChange1(_pathJsDefault.default.concat(changePath, property), value, previous, applyData);
-    };
-    const getProxyTarget = (value)=>value ? value[proxyTarget] || value : value
-    ;
-    const prepareValue = (value, target, property, basePath)=>{
-        if (_isBuiltinJs.isBuiltinWithoutMutableMethods(value) || property === 'constructor' || isShallow && !_smartCloneJsDefault.default.isHandledMethod(target, property) || _ignorePropertyJsDefault.default(cache, options, property) || cache.isGetInvariant(target, property) || ignoreDetached && cache.isDetached(target, object)) return value;
-        if (basePath === undefined) basePath = cache.getPath(target);
-        return cache.getProxy(value, _pathJsDefault.default.concat(basePath, property), handler, proxyTarget);
-    };
-    const handler = {
-        get (target, property, receiver) {
-            if (_isSymbolJsDefault.default(property)) {
-                if (property === proxyTarget || property === _constantsJs.TARGET) return target;
-                if (property === _constantsJs.UNSUBSCRIBE && !cache.isUnsubscribed && cache.getPath(target).length === 0) {
-                    cache.unsubscribe();
-                    return target;
-                }
-            }
-            const value = _isBuiltinJs.isBuiltinWithMutableMethods(target) ? Reflect.get(target, property) : Reflect.get(target, property, receiver);
-            return prepareValue(value, target, property);
-        },
-        set (target, property, value, receiver) {
-            value = getProxyTarget(value);
-            const reflectTarget = target[proxyTarget] || target;
-            const previous = reflectTarget[property];
-            if (equals(previous, value) && property in target) return true;
-            const isValid = validate(target, property, value, previous);
-            if (isValid && cache.setProperty(reflectTarget, property, value, receiver, previous)) {
-                handleChangeOnTarget(target, property, target[property], previous);
-                return true;
-            }
-            return !isValid;
-        },
-        defineProperty (target, property, descriptor) {
-            if (!cache.isSameDescriptor(descriptor, target, property)) {
-                const previous = target[property];
-                if (validate(target, property, descriptor.value, previous) && cache.defineProperty(target, property, descriptor, previous)) handleChangeOnTarget(target, property, descriptor.value, previous);
-            }
-            return true;
-        },
-        deleteProperty (target, property) {
-            if (!Reflect.has(target, property)) return true;
-            const previous = Reflect.get(target, property);
-            const isValid = validate(target, property, undefined, previous);
-            if (isValid && cache.deleteProperty(target, property, previous)) {
-                handleChangeOnTarget(target, property, undefined, previous);
-                return true;
-            }
-            return !isValid;
-        },
-        apply (target, thisArg, argumentsList) {
-            const thisProxyTarget = thisArg[proxyTarget] || thisArg;
-            if (cache.isUnsubscribed) return Reflect.apply(target, thisProxyTarget, argumentsList);
-            if ((details === false || details !== true && !details.includes(target.name)) && _smartCloneJsDefault.default.isHandledType(thisProxyTarget)) {
-                let applyPath = _pathJsDefault.default.initial(cache.getPath(target));
-                const isHandledMethod = _smartCloneJsDefault.default.isHandledMethod(thisProxyTarget, target.name);
-                smartClone.start(thisProxyTarget, applyPath, argumentsList);
-                let result = Reflect.apply(target, smartClone.preferredThisArg(target, thisArg, thisProxyTarget), isHandledMethod ? argumentsList.map((argument)=>getProxyTarget(argument)
-                ) : argumentsList);
-                const isChanged = smartClone.isChanged(thisProxyTarget, equals);
-                const previous = smartClone.stop();
-                if (_smartCloneJsDefault.default.isHandledType(result) && isHandledMethod) {
-                    if (thisArg instanceof Map && target.name === 'get') applyPath = _pathJsDefault.default.concat(applyPath, argumentsList[0]);
-                    result = cache.getProxy(result, applyPath, handler);
-                }
-                if (isChanged) {
-                    const applyData = {
-                        name: target.name,
-                        args: argumentsList,
-                        result
-                    };
-                    const changePath = smartClone.isCloning ? _pathJsDefault.default.initial(applyPath) : applyPath;
-                    const property = smartClone.isCloning ? _pathJsDefault.default.last(applyPath) : '';
-                    if (validate(_pathJsDefault.default.get(object, changePath), property, thisProxyTarget, previous, applyData)) handleChange(changePath, property, thisProxyTarget, previous, applyData);
-                    else smartClone.undo(thisProxyTarget);
-                }
-                if ((thisArg instanceof Map || thisArg instanceof Set) && _isIteratorJsDefault.default(result)) return _wrapIteratorJsDefault.default(result, target, thisArg, applyPath, prepareValue);
-                return result;
-            }
-            return Reflect.apply(target, thisArg, argumentsList);
-        }
-    };
-    const proxy = cache.getProxy(object, options.pathAsArray ? [] : '', handler);
-    onChange1 = onChange1.bind(proxy);
-    if (hasOnValidate) options.onValidate = options.onValidate.bind(proxy); // eslint-disable-line unicorn/prefer-prototype-methods
-    return proxy;
-};
-onChange.target = (proxy)=>proxy && proxy[_constantsJs.TARGET] || proxy
-;
-onChange.unsubscribe = (proxy)=>proxy[_constantsJs.UNSUBSCRIBE] || proxy
-;
-exports.default = onChange;
-
-},{"./lib/constants.js":"1Uoep","./lib/is-builtin.js":"aCszl","./lib/path.js":"iEtjY","./lib/is-symbol.js":"1kB5C","./lib/is-iterator.js":"92Ixh","./lib/wrap-iterator.js":"8qfrh","./lib/ignore-property.js":"4ug92","./lib/cache.js":"d037F","./lib/smart-clone/smart-clone.js":"4nHqz","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"1Uoep":[function(require,module,exports) {
-var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
-parcelHelpers.defineInteropFlag(exports);
-parcelHelpers.export(exports, "PATH_SEPARATOR", ()=>PATH_SEPARATOR
-);
-parcelHelpers.export(exports, "TARGET", ()=>TARGET
-);
-parcelHelpers.export(exports, "UNSUBSCRIBE", ()=>UNSUBSCRIBE
-);
-const PATH_SEPARATOR = '.';
-const TARGET = Symbol('target');
-const UNSUBSCRIBE = Symbol('unsubscribe');
-
-},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"aCszl":[function(require,module,exports) {
-var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
-parcelHelpers.defineInteropFlag(exports);
-parcelHelpers.export(exports, "isBuiltinWithMutableMethods", ()=>isBuiltinWithMutableMethods
-);
-parcelHelpers.export(exports, "isBuiltinWithoutMutableMethods", ()=>isBuiltinWithoutMutableMethods
-);
-function isBuiltinWithMutableMethods(value) {
-    return value instanceof Date || value instanceof Set || value instanceof Map || value instanceof WeakSet || value instanceof WeakMap || ArrayBuffer.isView(value);
-}
-function isBuiltinWithoutMutableMethods(value) {
-    return (typeof value === 'object' ? value === null : typeof value !== 'function') || value instanceof RegExp;
-}
-
-},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"iEtjY":[function(require,module,exports) {
-var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
-parcelHelpers.defineInteropFlag(exports);
-var _constantsJs = require("./constants.js");
-var _isArrayJs = require("./is-array.js");
-var _isArrayJsDefault = parcelHelpers.interopDefault(_isArrayJs);
-var _isSymbolJs = require("./is-symbol.js");
-var _isSymbolJsDefault = parcelHelpers.interopDefault(_isSymbolJs);
-const path = {
-    after: (path1, subPath)=>{
-        if (_isArrayJsDefault.default(path1)) return path1.slice(subPath.length);
-        if (subPath === '') return path1;
-        return path1.slice(subPath.length + 1);
-    },
-    concat: (path2, key)=>{
-        if (_isArrayJsDefault.default(path2)) {
-            path2 = [
-                ...path2
-            ];
-            if (key) path2.push(key);
-            return path2;
-        }
-        if (key && key.toString !== undefined) {
-            if (path2 !== '') path2 += _constantsJs.PATH_SEPARATOR;
-            if (_isSymbolJsDefault.default(key)) return path2 + key.toString();
-            return path2 + key;
-        }
-        return path2;
-    },
-    initial: (path3)=>{
-        if (_isArrayJsDefault.default(path3)) return path3.slice(0, -1);
-        if (path3 === '') return path3;
-        const index = path3.lastIndexOf(_constantsJs.PATH_SEPARATOR);
-        if (index === -1) return '';
-        return path3.slice(0, index);
-    },
-    last: (path4)=>{
-        if (_isArrayJsDefault.default(path4)) return path4[path4.length - 1] || '';
-        if (path4 === '') return path4;
-        const index = path4.lastIndexOf(_constantsJs.PATH_SEPARATOR);
-        if (index === -1) return path4;
-        return path4.slice(index + 1);
-    },
-    walk: (path5, callback)=>{
-        if (_isArrayJsDefault.default(path5)) for (const key of path5)callback(key);
-        else if (path5 !== '') {
-            let position = 0;
-            let index = path5.indexOf(_constantsJs.PATH_SEPARATOR);
-            if (index === -1) callback(path5);
-            else while(position < path5.length){
-                if (index === -1) index = path5.length;
-                callback(path5.slice(position, index));
-                position = index + 1;
-                index = path5.indexOf(_constantsJs.PATH_SEPARATOR, position);
-            }
-        }
-    },
-    get (object, path6) {
-        this.walk(path6, (key)=>{
-            if (object) object = object[key];
-        });
-        return object;
-    }
-};
-exports.default = path;
-
-},{"./constants.js":"1Uoep","./is-array.js":"gDBsB","./is-symbol.js":"1kB5C","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"gDBsB":[function(require,module,exports) {
-var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
-parcelHelpers.defineInteropFlag(exports);
-exports.default = Array.isArray;
-
-},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"1kB5C":[function(require,module,exports) {
-var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
-parcelHelpers.defineInteropFlag(exports);
-function isSymbol(value) {
-    return typeof value === 'symbol';
-}
-exports.default = isSymbol;
-
-},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"92Ixh":[function(require,module,exports) {
-var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
-parcelHelpers.defineInteropFlag(exports);
-function isIterator(value) {
-    return typeof value === 'object' && typeof value.next === 'function';
-}
-exports.default = isIterator;
-
-},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"8qfrh":[function(require,module,exports) {
-var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
-parcelHelpers.defineInteropFlag(exports);
-var _constantsJs = require("./constants.js");
-function wrapIterator(iterator, target, thisArg, applyPath, prepareValue) {
-    const originalNext = iterator.next;
-    if (target.name === 'entries') iterator.next = function() {
-        const result = originalNext.call(this);
-        if (result.done === false) {
-            result.value[0] = prepareValue(result.value[0], target, result.value[0], applyPath);
-            result.value[1] = prepareValue(result.value[1], target, result.value[0], applyPath);
-        }
-        return result;
-    };
-    else if (target.name === 'values') {
-        const keyIterator = thisArg[_constantsJs.TARGET].keys();
-        iterator.next = function() {
-            const result = originalNext.call(this);
-            if (result.done === false) result.value = prepareValue(result.value, target, keyIterator.next().value, applyPath);
-            return result;
-        };
-    } else iterator.next = function() {
-        const result = originalNext.call(this);
-        if (result.done === false) result.value = prepareValue(result.value, target, result.value, applyPath);
-        return result;
-    };
-    return iterator;
-}
-exports.default = wrapIterator;
-
-},{"./constants.js":"1Uoep","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"4ug92":[function(require,module,exports) {
-var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
-parcelHelpers.defineInteropFlag(exports);
-var _isSymbolJs = require("./is-symbol.js");
-var _isSymbolJsDefault = parcelHelpers.interopDefault(_isSymbolJs);
-function ignoreProperty(cache, options, property) {
-    return cache.isUnsubscribed || options.ignoreSymbols && _isSymbolJsDefault.default(property) || options.ignoreUnderscores && property.charAt(0) === '_' || 'ignoreKeys' in options && options.ignoreKeys.includes(property);
-}
-exports.default = ignoreProperty;
-
-},{"./is-symbol.js":"1kB5C","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"d037F":[function(require,module,exports) {
-var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
-parcelHelpers.defineInteropFlag(exports);
-var _pathJs = require("./path.js");
-var _pathJsDefault = parcelHelpers.interopDefault(_pathJs);
-class Cache {
-    constructor(equals){
-        this._equals = equals;
-        this._proxyCache = new WeakMap();
-        this._pathCache = new WeakMap();
-        this.isUnsubscribed = false;
-    }
-    _getDescriptorCache() {
-        if (this._descriptorCache === undefined) this._descriptorCache = new WeakMap();
-        return this._descriptorCache;
-    }
-    _getProperties(target) {
-        const descriptorCache = this._getDescriptorCache();
-        let properties = descriptorCache.get(target);
-        if (properties === undefined) {
-            properties = {
-            };
-            descriptorCache.set(target, properties);
-        }
-        return properties;
-    }
-    _getOwnPropertyDescriptor(target, property) {
-        if (this.isUnsubscribed) return Reflect.getOwnPropertyDescriptor(target, property);
-        const properties = this._getProperties(target);
-        let descriptor = properties[property];
-        if (descriptor === undefined) {
-            descriptor = Reflect.getOwnPropertyDescriptor(target, property);
-            properties[property] = descriptor;
-        }
-        return descriptor;
-    }
-    getProxy(target, path, handler, proxyTarget) {
-        if (this.isUnsubscribed) return target;
-        const reflectTarget = target[proxyTarget];
-        const source = reflectTarget || target;
-        this._pathCache.set(source, path);
-        let proxy = this._proxyCache.get(source);
-        if (proxy === undefined) {
-            proxy = reflectTarget === undefined ? new Proxy(target, handler) : target;
-            this._proxyCache.set(source, proxy);
-        }
-        return proxy;
-    }
-    getPath(target) {
-        return this.isUnsubscribed ? undefined : this._pathCache.get(target);
-    }
-    isDetached(target, object) {
-        return !Object.is(target, _pathJsDefault.default.get(object, this.getPath(target)));
-    }
-    defineProperty(target, property, descriptor) {
-        if (!Reflect.defineProperty(target, property, descriptor)) return false;
-        if (!this.isUnsubscribed) this._getProperties(target)[property] = descriptor;
-        return true;
-    }
-    setProperty(target, property, value, receiver, previous) {
-        if (!this._equals(previous, value) || !(property in target)) {
-            const descriptor = this._getOwnPropertyDescriptor(target, property);
-            if (descriptor !== undefined && 'set' in descriptor) return Reflect.set(target, property, value, receiver);
-            return Reflect.set(target, property, value);
-        }
-        return true;
-    }
-    deleteProperty(target, property, previous) {
-        if (Reflect.deleteProperty(target, property)) {
-            if (!this.isUnsubscribed) {
-                const properties = this._getDescriptorCache().get(target);
-                if (properties) {
-                    delete properties[property];
-                    this._pathCache.delete(previous);
-                }
-            }
-            return true;
-        }
-        return false;
-    }
-    isSameDescriptor(a, target, property) {
-        const b = this._getOwnPropertyDescriptor(target, property);
-        return a !== undefined && b !== undefined && Object.is(a.value, b.value) && (a.writable || false) === (b.writable || false) && (a.enumerable || false) === (b.enumerable || false) && (a.configurable || false) === (b.configurable || false) && a.get === b.get && a.set === b.set;
-    }
-    isGetInvariant(target, property) {
-        const descriptor = this._getOwnPropertyDescriptor(target, property);
-        return descriptor !== undefined && descriptor.configurable !== true && descriptor.writable !== true;
-    }
-    unsubscribe() {
-        this._descriptorCache = null;
-        this._pathCache = null;
-        this._proxyCache = null;
-        this.isUnsubscribed = true;
-    }
-}
-exports.default = Cache;
-
-},{"./path.js":"iEtjY","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"4nHqz":[function(require,module,exports) {
-var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
-parcelHelpers.defineInteropFlag(exports);
-var _isArrayJs = require("../is-array.js");
-var _isArrayJsDefault = parcelHelpers.interopDefault(_isArrayJs);
-var _isBuiltinJs = require("../is-builtin.js");
-var _isObjectJs = require("../is-object.js");
-var _isObjectJsDefault = parcelHelpers.interopDefault(_isObjectJs);
-var _cloneObjectJs = require("./clone/clone-object.js");
-var _cloneObjectJsDefault = parcelHelpers.interopDefault(_cloneObjectJs);
-var _cloneArrayJs = require("./clone/clone-array.js");
-var _cloneArrayJsDefault = parcelHelpers.interopDefault(_cloneArrayJs);
-var _cloneDateJs = require("./clone/clone-date.js");
-var _cloneDateJsDefault = parcelHelpers.interopDefault(_cloneDateJs);
-var _cloneSetJs = require("./clone/clone-set.js");
-var _cloneSetJsDefault = parcelHelpers.interopDefault(_cloneSetJs);
-var _cloneMapJs = require("./clone/clone-map.js");
-var _cloneMapJsDefault = parcelHelpers.interopDefault(_cloneMapJs);
-var _cloneWeaksetJs = require("./clone/clone-weakset.js");
-var _cloneWeaksetJsDefault = parcelHelpers.interopDefault(_cloneWeaksetJs);
-var _cloneWeakmapJs = require("./clone/clone-weakmap.js");
-var _cloneWeakmapJsDefault = parcelHelpers.interopDefault(_cloneWeakmapJs);
-class SmartClone {
-    constructor(hasOnValidate){
-        this._stack = [];
-        this._hasOnValidate = hasOnValidate;
-    }
-    static isHandledType(value) {
-        return _isObjectJsDefault.default(value) || _isArrayJsDefault.default(value) || _isBuiltinJs.isBuiltinWithMutableMethods(value);
-    }
-    static isHandledMethod(target, name) {
-        if (_isObjectJsDefault.default(target)) return _cloneObjectJsDefault.default.isHandledMethod(name);
-        if (_isArrayJsDefault.default(target)) return _cloneArrayJsDefault.default.isHandledMethod(name);
-        if (target instanceof Set) return _cloneSetJsDefault.default.isHandledMethod(name);
-        if (target instanceof Map) return _cloneMapJsDefault.default.isHandledMethod(name);
-        return _isBuiltinJs.isBuiltinWithMutableMethods(target);
-    }
-    get isCloning() {
-        return this._stack.length > 0;
-    }
-    start(value, path, argumentsList) {
-        let CloneClass = _cloneObjectJsDefault.default;
-        if (_isArrayJsDefault.default(value)) CloneClass = _cloneArrayJsDefault.default;
-        else if (value instanceof Date) CloneClass = _cloneDateJsDefault.default;
-        else if (value instanceof Set) CloneClass = _cloneSetJsDefault.default;
-        else if (value instanceof Map) CloneClass = _cloneMapJsDefault.default;
-        else if (value instanceof WeakSet) CloneClass = _cloneWeaksetJsDefault.default;
-        else if (value instanceof WeakMap) CloneClass = _cloneWeakmapJsDefault.default;
-        this._stack.push(new CloneClass(value, path, argumentsList, this._hasOnValidate));
-    }
-    update(fullPath, property, value) {
-        this._stack[this._stack.length - 1].update(fullPath, property, value);
-    }
-    preferredThisArg(target, thisArg, thisProxyTarget) {
-        const { name  } = target;
-        const isHandledMethod = SmartClone.isHandledMethod(thisProxyTarget, name);
-        return this._stack[this._stack.length - 1].preferredThisArg(isHandledMethod, name, thisArg, thisProxyTarget);
-    }
-    isChanged(isMutable, value, equals) {
-        return this._stack[this._stack.length - 1].isChanged(isMutable, value, equals);
-    }
-    undo(object) {
-        if (this._previousClone !== undefined) this._previousClone.undo(object);
-    }
-    stop() {
-        this._previousClone = this._stack.pop();
-        return this._previousClone.clone;
-    }
-}
-exports.default = SmartClone;
-
-},{"../is-array.js":"gDBsB","../is-builtin.js":"aCszl","../is-object.js":"ftVyq","./clone/clone-object.js":"9qeRV","./clone/clone-array.js":"bBNzZ","./clone/clone-date.js":"j9TOv","./clone/clone-set.js":"fgNCY","./clone/clone-map.js":"6ho0u","./clone/clone-weakset.js":"fYqiz","./clone/clone-weakmap.js":"5vqZf","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"ftVyq":[function(require,module,exports) {
-var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
-parcelHelpers.defineInteropFlag(exports);
-function isObject(value) {
-    return toString.call(value) === '[object Object]';
-}
-exports.default = isObject;
-
-},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"9qeRV":[function(require,module,exports) {
-var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
-parcelHelpers.defineInteropFlag(exports);
-var _pathJs = require("../../path.js");
-var _pathJsDefault = parcelHelpers.interopDefault(_pathJs);
-var _isArrayJs = require("../../is-array.js");
-var _isArrayJsDefault = parcelHelpers.interopDefault(_isArrayJs);
-var _isObjectJs = require("../../is-object.js");
-var _isObjectJsDefault = parcelHelpers.interopDefault(_isObjectJs);
-var _arrayJs = require("../methods/array.js");
-var _setJs = require("../methods/set.js");
-var _mapJs = require("../methods/map.js");
-var _objectJs = require("../methods/object.js");
-class CloneObject {
-    constructor(value, path, argumentsList, hasOnValidate){
-        this._path = path;
-        this._isChanged = false;
-        this._clonedCache = new Set();
-        this._hasOnValidate = hasOnValidate;
-        this._changes = hasOnValidate ? [] : null;
-        this.clone = path === undefined ? value : this._shallowClone(value);
-    }
-    static isHandledMethod(name) {
-        return _objectJs.IMMUTABLE_OBJECT_METHODS.has(name);
-    }
-    _shallowClone(value) {
-        let clone = value;
-        if (_isObjectJsDefault.default(value)) clone = {
-            ...value
-        };
-        else if (_isArrayJsDefault.default(value)) clone = [
-            ...value
-        ];
-        else if (value instanceof Date) clone = new Date(value);
-        else if (value instanceof Set) clone = new Set([
-            ...value
-        ].map((item)=>this._shallowClone(item)
-        ));
-        else if (value instanceof Map) {
-            clone = new Map();
-            for (const [key, item] of value.entries())clone.set(key, this._shallowClone(item));
-        }
-        this._clonedCache.add(clone);
-        return clone;
-    }
-    preferredThisArg(isHandledMethod, name, thisArg, thisProxyTarget) {
-        if (isHandledMethod) {
-            if (_isArrayJsDefault.default(thisProxyTarget)) this._onIsChanged = _arrayJs.MUTABLE_ARRAY_METHODS[name];
-            else if (thisProxyTarget instanceof Set) this._onIsChanged = _setJs.MUTABLE_SET_METHODS[name];
-            else if (thisProxyTarget instanceof Map) this._onIsChanged = _mapJs.MUTABLE_MAP_METHODS[name];
-            return thisProxyTarget;
-        }
-        return thisArg;
-    }
-    update(fullPath, property, value) {
-        const changePath = _pathJsDefault.default.after(fullPath, this._path);
-        if (property !== 'length') {
-            let object = this.clone;
-            _pathJsDefault.default.walk(changePath, (key)=>{
-                if (object && object[key]) {
-                    if (!this._clonedCache.has(object[key])) object[key] = this._shallowClone(object[key]);
-                    object = object[key];
-                }
-            });
-            if (this._hasOnValidate) this._changes.push({
-                path: changePath,
-                property,
-                previous: value
-            });
-            if (object && object[property]) object[property] = value;
-        }
-        this._isChanged = true;
-    }
-    undo(object) {
-        let change;
-        for(let index = this._changes.length - 1; index !== -1; index--){
-            change = this._changes[index];
-            _pathJsDefault.default.get(object, change.path)[change.property] = change.previous;
-        }
-    }
-    isChanged(value) {
-        return this._onIsChanged === undefined ? this._isChanged : this._onIsChanged(this.clone, value);
-    }
-}
-exports.default = CloneObject;
-
-},{"../../path.js":"iEtjY","../../is-array.js":"gDBsB","../../is-object.js":"ftVyq","../methods/array.js":"4tBgH","../methods/set.js":"46LPZ","../methods/map.js":"jZpKy","../methods/object.js":"7GRup","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"4tBgH":[function(require,module,exports) {
-var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
-parcelHelpers.defineInteropFlag(exports);
-parcelHelpers.export(exports, "MUTABLE_ARRAY_METHODS", ()=>MUTABLE_ARRAY_METHODS
-);
-parcelHelpers.export(exports, "HANDLED_ARRAY_METHODS", ()=>HANDLED_ARRAY_METHODS
-);
-var _isDiffCertainJs = require("../diff/is-diff-certain.js");
-var _isDiffCertainJsDefault = parcelHelpers.interopDefault(_isDiffCertainJs);
-var _isDiffArraysJs = require("../diff/is-diff-arrays.js");
-var _isDiffArraysJsDefault = parcelHelpers.interopDefault(_isDiffArraysJs);
-var _objectJs = require("./object.js");
-const IMMUTABLE_ARRAY_METHODS = new Set([
-    'concat',
-    'includes',
-    'indexOf',
-    'join',
-    'keys',
-    'lastIndexOf', 
-]);
-const MUTABLE_ARRAY_METHODS = {
-    push: _isDiffCertainJsDefault.default,
-    pop: _isDiffCertainJsDefault.default,
-    shift: _isDiffCertainJsDefault.default,
-    unshift: _isDiffCertainJsDefault.default,
-    copyWithin: _isDiffArraysJsDefault.default,
-    reverse: _isDiffArraysJsDefault.default,
-    sort: _isDiffArraysJsDefault.default,
-    splice: _isDiffArraysJsDefault.default,
-    flat: _isDiffArraysJsDefault.default,
-    fill: _isDiffArraysJsDefault.default
-};
-const HANDLED_ARRAY_METHODS = new Set([
-    ..._objectJs.IMMUTABLE_OBJECT_METHODS,
-    ...IMMUTABLE_ARRAY_METHODS,
-    ...Object.keys(MUTABLE_ARRAY_METHODS), 
-]);
-
-},{"../diff/is-diff-certain.js":"ebvvd","../diff/is-diff-arrays.js":"9w3oa","./object.js":"7GRup","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"ebvvd":[function(require,module,exports) {
-var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
-parcelHelpers.defineInteropFlag(exports);
-function isDiffCertain() {
-    return true;
-}
-exports.default = isDiffCertain;
-
-},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"9w3oa":[function(require,module,exports) {
-var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
-parcelHelpers.defineInteropFlag(exports);
-function isDiffArrays(clone, value) {
-    return clone.length !== value.length || clone.some((item, index)=>value[index] !== item
-    );
-}
-exports.default = isDiffArrays;
-
-},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"7GRup":[function(require,module,exports) {
-var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
-parcelHelpers.defineInteropFlag(exports);
-parcelHelpers.export(exports, "IMMUTABLE_OBJECT_METHODS", ()=>IMMUTABLE_OBJECT_METHODS
-);
-const IMMUTABLE_OBJECT_METHODS = new Set([
-    'hasOwnProperty',
-    'isPrototypeOf',
-    'propertyIsEnumerable',
-    'toLocaleString',
-    'toString',
-    'valueOf', 
-]);
-
-},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"46LPZ":[function(require,module,exports) {
-var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
-parcelHelpers.defineInteropFlag(exports);
-parcelHelpers.export(exports, "COLLECTION_ITERATOR_METHODS", ()=>COLLECTION_ITERATOR_METHODS
-);
-parcelHelpers.export(exports, "IMMUTABLE_SET_METHODS", ()=>IMMUTABLE_SET_METHODS
-);
-parcelHelpers.export(exports, "MUTABLE_SET_METHODS", ()=>MUTABLE_SET_METHODS
-);
-parcelHelpers.export(exports, "HANDLED_SET_METHODS", ()=>HANDLED_SET_METHODS
-);
-var _isDiffSetsJs = require("../diff/is-diff-sets.js");
-var _isDiffSetsJsDefault = parcelHelpers.interopDefault(_isDiffSetsJs);
-const COLLECTION_ITERATOR_METHODS = [
-    'keys',
-    'values',
-    'entries', 
-];
-const IMMUTABLE_SET_METHODS = new Set([
-    'has',
-    'toString', 
-]);
-const MUTABLE_SET_METHODS = {
-    add: _isDiffSetsJsDefault.default,
-    clear: _isDiffSetsJsDefault.default,
-    delete: _isDiffSetsJsDefault.default,
-    forEach: _isDiffSetsJsDefault.default
-};
-const HANDLED_SET_METHODS = new Set([
-    ...IMMUTABLE_SET_METHODS,
-    ...Object.keys(MUTABLE_SET_METHODS),
-    ...COLLECTION_ITERATOR_METHODS, 
-]);
-
-},{"../diff/is-diff-sets.js":"k2NHL","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"k2NHL":[function(require,module,exports) {
-var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
-parcelHelpers.defineInteropFlag(exports);
-function isDiffSets(clone, value) {
-    if (clone.size !== value.size) return true;
-    for (const element of clone){
-        if (!value.has(element)) return true;
-    }
-    return false;
-}
-exports.default = isDiffSets;
-
-},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"jZpKy":[function(require,module,exports) {
-var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
-parcelHelpers.defineInteropFlag(exports);
-parcelHelpers.export(exports, "MUTABLE_MAP_METHODS", ()=>MUTABLE_MAP_METHODS
-);
-parcelHelpers.export(exports, "HANDLED_MAP_METHODS", ()=>HANDLED_MAP_METHODS
-);
-var _isDiffMapsJs = require("../diff/is-diff-maps.js");
-var _isDiffMapsJsDefault = parcelHelpers.interopDefault(_isDiffMapsJs);
-var _setJs = require("./set.js");
-const IMMUTABLE_MAP_METHODS = new Set([
-    ..._setJs.IMMUTABLE_SET_METHODS,
-    'get'
-]);
-const MUTABLE_MAP_METHODS = {
-    set: _isDiffMapsJsDefault.default,
-    clear: _isDiffMapsJsDefault.default,
-    delete: _isDiffMapsJsDefault.default,
-    forEach: _isDiffMapsJsDefault.default
-};
-const HANDLED_MAP_METHODS = new Set([
-    ...IMMUTABLE_MAP_METHODS,
-    ...Object.keys(MUTABLE_MAP_METHODS),
-    ..._setJs.COLLECTION_ITERATOR_METHODS, 
-]);
-
-},{"../diff/is-diff-maps.js":"m0SsD","./set.js":"46LPZ","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"m0SsD":[function(require,module,exports) {
-var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
-parcelHelpers.defineInteropFlag(exports);
-function isDiffMaps(clone, value) {
-    if (clone.size !== value.size) return true;
-    let bValue;
-    for (const [key, aValue] of clone){
-        bValue = value.get(key);
-        if (bValue !== aValue || bValue === undefined && !value.has(key)) return true;
-    }
-    return false;
-}
-exports.default = isDiffMaps;
-
-},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"bBNzZ":[function(require,module,exports) {
-var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
-parcelHelpers.defineInteropFlag(exports);
-var _arrayJs = require("../methods/array.js");
-var _cloneObjectJs = require("./clone-object.js");
-var _cloneObjectJsDefault = parcelHelpers.interopDefault(_cloneObjectJs);
-class CloneArray extends _cloneObjectJsDefault.default {
-    static isHandledMethod(name) {
-        return _arrayJs.HANDLED_ARRAY_METHODS.has(name);
-    }
-}
-exports.default = CloneArray;
-
-},{"../methods/array.js":"4tBgH","./clone-object.js":"9qeRV","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"j9TOv":[function(require,module,exports) {
-var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
-parcelHelpers.defineInteropFlag(exports);
-var _cloneObjectJs = require("./clone-object.js");
-var _cloneObjectJsDefault = parcelHelpers.interopDefault(_cloneObjectJs);
-class CloneDate extends _cloneObjectJsDefault.default {
-    undo(object) {
-        object.setTime(this.clone.getTime());
-    }
-    isChanged(value, equals) {
-        return !equals(this.clone.valueOf(), value.valueOf());
-    }
-}
-exports.default = CloneDate;
-
-},{"./clone-object.js":"9qeRV","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"fgNCY":[function(require,module,exports) {
-var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
-parcelHelpers.defineInteropFlag(exports);
-var _setJs = require("../methods/set.js");
-var _cloneObjectJs = require("./clone-object.js");
-var _cloneObjectJsDefault = parcelHelpers.interopDefault(_cloneObjectJs);
-class CloneSet extends _cloneObjectJsDefault.default {
-    static isHandledMethod(name) {
-        return _setJs.HANDLED_SET_METHODS.has(name);
-    }
-    undo(object) {
-        for (const value of this.clone)object.add(value);
-        for (const value1 of object)if (!this.clone.has(value1)) object.delete(value1);
-    }
-}
-exports.default = CloneSet;
-
-},{"../methods/set.js":"46LPZ","./clone-object.js":"9qeRV","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"6ho0u":[function(require,module,exports) {
-var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
-parcelHelpers.defineInteropFlag(exports);
-var _mapJs = require("../methods/map.js");
-var _cloneObjectJs = require("./clone-object.js");
-var _cloneObjectJsDefault = parcelHelpers.interopDefault(_cloneObjectJs);
-class CloneMap extends _cloneObjectJsDefault.default {
-    static isHandledMethod(name) {
-        return _mapJs.HANDLED_MAP_METHODS.has(name);
-    }
-    undo(object) {
-        for (const [key, value] of this.clone.entries())object.set(key, value);
-        for (const key1 of object.keys())if (!this.clone.has(key1)) object.delete(key1);
-    }
-}
-exports.default = CloneMap;
-
-},{"../methods/map.js":"jZpKy","./clone-object.js":"9qeRV","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"fYqiz":[function(require,module,exports) {
-var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
-parcelHelpers.defineInteropFlag(exports);
-var _cloneObjectJs = require("./clone-object.js");
-var _cloneObjectJsDefault = parcelHelpers.interopDefault(_cloneObjectJs);
-class CloneWeakSet extends _cloneObjectJsDefault.default {
-    constructor(value, path, argumentsList, hasOnValidate){
-        super(undefined, path, argumentsList, hasOnValidate);
-        this._arg1 = argumentsList[0];
-        this._weakValue = value.has(this._arg1);
-    }
-    isChanged(value) {
-        return this._weakValue !== value.has(this._arg1);
-    }
-    undo(object) {
-        if (this._weakValue && !object.has(this._arg1)) object.add(this._arg1);
-        else object.delete(this._arg1);
-    }
-}
-exports.default = CloneWeakSet;
-
-},{"./clone-object.js":"9qeRV","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"5vqZf":[function(require,module,exports) {
-var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
-parcelHelpers.defineInteropFlag(exports);
-var _cloneObjectJs = require("./clone-object.js");
-var _cloneObjectJsDefault = parcelHelpers.interopDefault(_cloneObjectJs);
-class CloneWeakMap extends _cloneObjectJsDefault.default {
-    constructor(value, path, argumentsList, hasOnValidate){
-        super(undefined, path, argumentsList, hasOnValidate);
-        this._weakKey = argumentsList[0];
-        this._weakHas = value.has(this._weakKey);
-        this._weakValue = value.get(this._weakKey);
-    }
-    isChanged(value) {
-        return this._weakValue !== value.get(this._weakKey);
-    }
-    undo(object) {
-        const weakHas = object.has(this._weakKey);
-        if (this._weakHas && !weakHas) object.set(this._weakKey, this._weakValue);
-        else if (!this._weakHas && weakHas) object.delete(this._weakKey);
-        else if (this._weakValue !== object.get(this._weakKey)) object.set(this._weakKey, this._weakValue);
-    }
-}
-exports.default = CloneWeakMap;
-
-},{"./clone-object.js":"9qeRV","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"cgcsT":[function(require,module,exports) {
-var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
-parcelHelpers.defineInteropFlag(exports);
-parcelHelpers.export(exports, "repeat", ()=>repeat
-);
-parcelHelpers.export(exports, "randomBetween", ()=>randomBetween
-);
-const repeat = (callback, times)=>{
-    if (times == 0) callback();
-    else {
-        callback();
-        repeat(callback, times - 1);
-    }
-};
-const randomBetween = (min, max)=>{
-    return Math.round(min + Math.random() * (max - min));
-};
 
 },{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"aowtG":[function(require,module,exports) {
 var $parcel$ReactRefreshHelpers$bbd1 = require("@parcel/transformer-react-refresh-wrap/lib/helpers/helpers.js");
@@ -44174,24 +43359,130 @@ function Home() {
         const newCode = await _firebase.create(name);
         navigate(`/${newCode}/${name}`);
     }
-    return(/*#__PURE__*/ _jsxDevRuntime.jsxDEV("main", {
-        id: "home",
+    return(/*#__PURE__*/ _jsxDevRuntime.jsxDEV(_jsxDevRuntime.Fragment, {
         children: [
-            /*#__PURE__*/ _jsxDevRuntime.jsxDEV("div", {
+            /*#__PURE__*/ _jsxDevRuntime.jsxDEV("main", {
+                id: "home",
                 children: [
-                    /*#__PURE__*/ _jsxDevRuntime.jsxDEV("h1", {
-                        children: "Equals"
-                    }, void 0, false, {
+                    /*#__PURE__*/ _jsxDevRuntime.jsxDEV("div", {
+                        children: [
+                            /*#__PURE__*/ _jsxDevRuntime.jsxDEV("h1", {
+                                children: "Equals"
+                            }, void 0, false, {
+                                fileName: "src/Home.jsx",
+                                lineNumber: 27,
+                                columnNumber: 6
+                            }, this),
+                            /*#__PURE__*/ _jsxDevRuntime.jsxDEV(_reactRouterDom.Link, {
+                                to: "/tutorial",
+                                children: "Haven't played? Click for a tutorial"
+                            }, void 0, false, {
+                                fileName: "src/Home.jsx",
+                                lineNumber: 28,
+                                columnNumber: 6
+                            }, this)
+                        ]
+                    }, void 0, true, {
                         fileName: "src/Home.jsx",
                         lineNumber: 26,
                         columnNumber: 5
                     }, this),
-                    /*#__PURE__*/ _jsxDevRuntime.jsxDEV(_reactRouterDom.Link, {
-                        to: "/tutorial",
-                        children: "Haven't played? Click for a tutorial"
-                    }, void 0, false, {
+                    /*#__PURE__*/ _jsxDevRuntime.jsxDEV("form", {
+                        onSubmit: async (e)=>{
+                            e.preventDefault();
+                            setError("");
+                            const n = parseInt(e.target.code.value);
+                            if (n < 100000 || n > 999999) {
+                                setError("Invalid code. Please try again.");
+                                return;
+                            }
+                            const data = await _firebase.getGame(n);
+                            console.log(data);
+                            if (!data) {
+                                setError("This game does not exist.");
+                                return;
+                            }
+                            // if (JSON.parse(data).started) {
+                            // 	setError("Game already started!")
+                            // 	return
+                            // }
+                            const name = e.target.name.value;
+                            if (!name || name.trimRight().trimLeft() == "") {
+                                setError("Enter your name.");
+                                return;
+                            }
+                            navigate(`/${n}/${name}`);
+                        },
+                        children: [
+                            /*#__PURE__*/ _jsxDevRuntime.jsxDEV("input", {
+                                type: "number",
+                                name: "code",
+                                id: "code",
+                                placeholder: "Enter the 6 digit game code",
+                                required: true
+                            }, void 0, false, {
+                                fileName: "src/Home.jsx",
+                                lineNumber: 63,
+                                columnNumber: 6
+                            }, this),
+                            /*#__PURE__*/ _jsxDevRuntime.jsxDEV("input", {
+                                type: "text",
+                                name: "name",
+                                id: "name",
+                                placeholder: "Enter your name",
+                                required: true
+                            }, void 0, false, {
+                                fileName: "src/Home.jsx",
+                                lineNumber: 70,
+                                columnNumber: 6
+                            }, this),
+                            /*#__PURE__*/ _jsxDevRuntime.jsxDEV("button", {
+                                type: "submit",
+                                children: "Join"
+                            }, void 0, false, {
+                                fileName: "src/Home.jsx",
+                                lineNumber: 77,
+                                columnNumber: 6
+                            }, this),
+                            /*#__PURE__*/ _jsxDevRuntime.jsxDEV("p", {
+                                children: error
+                            }, void 0, false, {
+                                fileName: "src/Home.jsx",
+                                lineNumber: 78,
+                                columnNumber: 6
+                            }, this)
+                        ]
+                    }, void 0, true, {
                         fileName: "src/Home.jsx",
-                        lineNumber: 27,
+                        lineNumber: 33,
+                        columnNumber: 5
+                    }, this),
+                    /*#__PURE__*/ _jsxDevRuntime.jsxDEV("form", {
+                        onSubmit: handleCreate,
+                        children: [
+                            /*#__PURE__*/ _jsxDevRuntime.jsxDEV("input", {
+                                type: "text",
+                                name: "name",
+                                id: "name",
+                                placeholder: "Enter your name",
+                                required: true
+                            }, void 0, false, {
+                                fileName: "src/Home.jsx",
+                                lineNumber: 82,
+                                columnNumber: 6
+                            }, this),
+                            /*#__PURE__*/ _jsxDevRuntime.jsxDEV("button", {
+                                type: "submit",
+                                children: "Create a new game"
+                            }, void 0, false, {
+                                fileName: "src/Home.jsx",
+                                lineNumber: 89,
+                                columnNumber: 6
+                            }, this)
+                        ]
+                    }, void 0, true, {
+                        fileName: "src/Home.jsx",
+                        lineNumber: 81,
                         columnNumber: 5
                     }, this)
                 ]
@@ -44200,110 +43491,17 @@ function Home() {
                 lineNumber: 25,
                 columnNumber: 4
             }, this),
-            /*#__PURE__*/ _jsxDevRuntime.jsxDEV("form", {
-                onSubmit: async (e)=>{
-                    e.preventDefault();
-                    setError("");
-                    const n = parseInt(e.target.code.value);
-                    if (n < 100000 || n > 999999) {
-                        setError("Invalid code. Please try again.");
-                        return;
-                    }
-                    const data = await _firebase.getGame(n);
-                    console.log(data);
-                    if (!data) {
-                        setError("This game does not exist.");
-                        return;
-                    }
-                    // if (JSON.parse(data).started) {
-                    // 	setError("Game already started!")
-                    // 	return
-                    // }
-                    const name = e.target.name.value;
-                    if (!name || name.trimRight().trimLeft() == "") {
-                        setError("Enter your name.");
-                        return;
-                    }
-                    navigate(`/${n}/${name}`);
-                },
-                children: [
-                    /*#__PURE__*/ _jsxDevRuntime.jsxDEV("input", {
-                        type: "number",
-                        name: "code",
-                        id: "code",
-                        placeholder: "Enter the 6 digit game code",
-                        required: true
-                    }, void 0, false, {
-                        fileName: "src/Home.jsx",
-                        lineNumber: 60,
-                        columnNumber: 5
-                    }, this),
-                    /*#__PURE__*/ _jsxDevRuntime.jsxDEV("input", {
-                        type: "text",
-                        name: "name",
-                        id: "name",
-                        placeholder: "Enter your name",
-                        required: true
-                    }, void 0, false, {
-                        fileName: "src/Home.jsx",
-                        lineNumber: 67,
-                        columnNumber: 5
-                    }, this),
-                    /*#__PURE__*/ _jsxDevRuntime.jsxDEV("button", {
-                        type: "submit",
-                        children: "Join"
-                    }, void 0, false, {
-                        fileName: "src/Home.jsx",
-                        lineNumber: 74,
-                        columnNumber: 5
-                    }, this),
-                    /*#__PURE__*/ _jsxDevRuntime.jsxDEV("p", {
-                        children: error
-                    }, void 0, false, {
-                        fileName: "src/Home.jsx",
-                        lineNumber: 75,
-                        columnNumber: 5
-                    }, this)
-                ]
-            }, void 0, true, {
+            /*#__PURE__*/ _jsxDevRuntime.jsxDEV("a", {
+                href: "https://ranjithrd.github.io",
+                className: "noStyle",
+                children: "Designed and built by Ranjith RD"
+            }, void 0, false, {
                 fileName: "src/Home.jsx",
-                lineNumber: 30,
-                columnNumber: 4
-            }, this),
-            /*#__PURE__*/ _jsxDevRuntime.jsxDEV("form", {
-                onSubmit: handleCreate,
-                children: [
-                    /*#__PURE__*/ _jsxDevRuntime.jsxDEV("input", {
-                        type: "text",
-                        name: "name",
-                        id: "name",
-                        placeholder: "Enter your name",
-                        required: true
-                    }, void 0, false, {
-                        fileName: "src/Home.jsx",
-                        lineNumber: 79,
-                        columnNumber: 5
-                    }, this),
-                    /*#__PURE__*/ _jsxDevRuntime.jsxDEV("button", {
-                        type: "submit",
-                        children: "Create a new game"
-                    }, void 0, false, {
-                        fileName: "src/Home.jsx",
-                        lineNumber: 86,
-                        columnNumber: 5
-                    }, this)
-                ]
-            }, void 0, true, {
-                fileName: "src/Home.jsx",
-                lineNumber: 78,
+                lineNumber: 92,
                 columnNumber: 4
             }, this)
         ]
-    }, void 0, true, {
-        fileName: "src/Home.jsx",
-        lineNumber: 24,
-        columnNumber: 3
-    }, this));
+    }, void 0, true));
 }
 _s(Home, "INZz5bqB2YD8uNTAuiHY3hPSvD4=", false, function() {
     return [
@@ -44332,289 +43530,69 @@ parcelHelpers.defineInteropFlag(exports);
 var _jsxDevRuntime = require("react/jsx-dev-runtime");
 var _react = require("react");
 var _reactDefault = parcelHelpers.interopDefault(_react);
+var _reactRouterDom = require("react-router-dom");
+var _tutorialPdf = require("url:./tutorial.pdf");
+var _tutorialPdfDefault = parcelHelpers.interopDefault(_tutorialPdf);
 function Tutorial() {
     return(/*#__PURE__*/ _jsxDevRuntime.jsxDEV("main", {
         id: "tutorial",
         children: [
             /*#__PURE__*/ _jsxDevRuntime.jsxDEV("div", {
                 children: [
+                    /*#__PURE__*/ _jsxDevRuntime.jsxDEV("small", {
+                        children: /*#__PURE__*/ _jsxDevRuntime.jsxDEV(_reactRouterDom.Link, {
+                            to: "/",
+                            children: "Back home"
+                        }, void 0, false, {
+                            fileName: "src/Tutorial.jsx",
+                            lineNumber: 10,
+                            columnNumber: 6
+                        }, this)
+                    }, void 0, false, {
+                        fileName: "src/Tutorial.jsx",
+                        lineNumber: 9,
+                        columnNumber: 5
+                    }, this),
+                    /*#__PURE__*/ _jsxDevRuntime.jsxDEV("br", {
+                    }, void 0, false, {
+                        fileName: "src/Tutorial.jsx",
+                        lineNumber: 12,
+                        columnNumber: 17
+                    }, this),
                     /*#__PURE__*/ _jsxDevRuntime.jsxDEV("sub", {
                         children: "How to play"
                     }, void 0, false, {
                         fileName: "src/Tutorial.jsx",
-                        lineNumber: 7,
+                        lineNumber: 13,
                         columnNumber: 5
                     }, this),
                     /*#__PURE__*/ _jsxDevRuntime.jsxDEV("h2", {
                         children: "Equals"
                     }, void 0, false, {
                         fileName: "src/Tutorial.jsx",
-                        lineNumber: 8,
+                        lineNumber: 14,
                         columnNumber: 5
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "src/Tutorial.jsx",
-                lineNumber: 6,
+                lineNumber: 8,
                 columnNumber: 4
             }, this),
-            /*#__PURE__*/ _jsxDevRuntime.jsxDEV("div", {
-                children: [
-                    /*#__PURE__*/ _jsxDevRuntime.jsxDEV("h3", {
-                        children: "Parts"
-                    }, void 0, false, {
-                        fileName: "src/Tutorial.jsx",
-                        lineNumber: 12,
-                        columnNumber: 5
-                    }, this),
-                    /*#__PURE__*/ _jsxDevRuntime.jsxDEV("p", {
-                        children: [
-                            "Equals consists of:",
-                            /*#__PURE__*/ _jsxDevRuntime.jsxDEV("br", {
-                            }, void 0, false, {
-                                fileName: "src/Tutorial.jsx",
-                                lineNumber: 15,
-                                columnNumber: 6
-                            }, this),
-                            /*#__PURE__*/ _jsxDevRuntime.jsxDEV("ul", {
-                                children: [
-                                    /*#__PURE__*/ _jsxDevRuntime.jsxDEV("li", {
-                                        children: "18 red cards of either 1, 2, or 3"
-                                    }, void 0, false, {
-                                        fileName: "src/Tutorial.jsx",
-                                        lineNumber: 17,
-                                        columnNumber: 7
-                                    }, this),
-                                    /*#__PURE__*/ _jsxDevRuntime.jsxDEV("li", {
-                                        children: "18 blue cards of either 1, 2, or 3"
-                                    }, void 0, false, {
-                                        fileName: "src/Tutorial.jsx",
-                                        lineNumber: 18,
-                                        columnNumber: 7
-                                    }, this),
-                                    /*#__PURE__*/ _jsxDevRuntime.jsxDEV("li", {
-                                        children: "8 gold cards"
-                                    }, void 0, false, {
-                                        fileName: "src/Tutorial.jsx",
-                                        lineNumber: 19,
-                                        columnNumber: 7
-                                    }, this)
-                                ]
-                            }, void 0, true, {
-                                fileName: "src/Tutorial.jsx",
-                                lineNumber: 16,
-                                columnNumber: 6
-                            }, this),
-                            /*#__PURE__*/ _jsxDevRuntime.jsxDEV("br", {
-                            }, void 0, false, {
-                                fileName: "src/Tutorial.jsx",
-                                lineNumber: 21,
-                                columnNumber: 6
-                            }, this),
-                            "Each red card counts against the value of your set, e.g",
-                            " ",
-                            /*#__PURE__*/ _jsxDevRuntime.jsxDEV("strong", {
-                                children: "a Red 1 would be -1"
-                            }, void 0, false, {
-                                fileName: "src/Tutorial.jsx",
-                                lineNumber: 23,
-                                columnNumber: 6
-                            }, this),
-                            ".",
-                            /*#__PURE__*/ _jsxDevRuntime.jsxDEV("br", {
-                            }, void 0, false, {
-                                fileName: "src/Tutorial.jsx",
-                                lineNumber: 24,
-                                columnNumber: 6
-                            }, this),
-                            "Conversely, blue cards count towards your value, so",
-                            " ",
-                            /*#__PURE__*/ _jsxDevRuntime.jsxDEV("strong", {
-                                children: "a Blue 1 would be +1"
-                            }, void 0, false, {
-                                fileName: "src/Tutorial.jsx",
-                                lineNumber: 26,
-                                columnNumber: 6
-                            }, this),
-                            ".",
-                            /*#__PURE__*/ _jsxDevRuntime.jsxDEV("br", {
-                            }, void 0, false, {
-                                fileName: "src/Tutorial.jsx",
-                                lineNumber: 27,
-                                columnNumber: 6
-                            }, this),
-                            "Gold cards don't count, and have a value of",
-                            " ",
-                            /*#__PURE__*/ _jsxDevRuntime.jsxDEV("strong", {
-                                children: "zero"
-                            }, void 0, false, {
-                                fileName: "src/Tutorial.jsx",
-                                lineNumber: 29,
-                                columnNumber: 6
-                            }, this),
-                            "."
-                        ]
-                    }, void 0, true, {
-                        fileName: "src/Tutorial.jsx",
-                        lineNumber: 13,
-                        columnNumber: 5
-                    }, this)
-                ]
-            }, void 0, true, {
-                fileName: "src/Tutorial.jsx",
-                lineNumber: 11,
-                columnNumber: 4
-            }, this),
-            /*#__PURE__*/ _jsxDevRuntime.jsxDEV("div", {
-                id: "dont-know-rummy",
-                children: [
-                    /*#__PURE__*/ _jsxDevRuntime.jsxDEV("sub", {
-                        children: [
-                            "If you already know how to play Rummy, skip ahead to",
-                            " ",
-                            /*#__PURE__*/ _jsxDevRuntime.jsxDEV("a", {
-                                href: "#know-rummy",
-                                children: "the next section"
-                            }, void 0, false, {
-                                fileName: "src/Tutorial.jsx",
-                                lineNumber: 36,
-                                columnNumber: 6
-                            }, this)
-                        ]
-                    }, void 0, true, {
-                        fileName: "src/Tutorial.jsx",
-                        lineNumber: 34,
-                        columnNumber: 5
-                    }, this),
-                    /*#__PURE__*/ _jsxDevRuntime.jsxDEV("h3", {
-                        children: "I don't know how to play Rummy"
-                    }, void 0, false, {
-                        fileName: "src/Tutorial.jsx",
-                        lineNumber: 38,
-                        columnNumber: 5
-                    }, this),
-                    /*#__PURE__*/ _jsxDevRuntime.jsxDEV("p", {
-                        children: [
-                            /*#__PURE__*/ _jsxDevRuntime.jsxDEV("ol", {
-                                children: [
-                                    /*#__PURE__*/ _jsxDevRuntime.jsxDEV("li", {
-                                        children: "Each person is given 3 or 5 cards depending on the number of players"
-                                    }, void 0, false, {
-                                        fileName: "src/Tutorial.jsx",
-                                        lineNumber: 41,
-                                        columnNumber: 7
-                                    }, this),
-                                    /*#__PURE__*/ _jsxDevRuntime.jsxDEV("li", {
-                                        children: [
-                                            /*#__PURE__*/ _jsxDevRuntime.jsxDEV("img", {
-                                                src: "",
-                                                alt: ""
-                                            }, void 0, false, {
-                                                fileName: "src/Tutorial.jsx",
-                                                lineNumber: 46,
-                                                columnNumber: 8
-                                            }, this),
-                                            "The remaining cards are placed into a deck and one card is placed on the stack"
-                                        ]
-                                    }, void 0, true, {
-                                        fileName: "src/Tutorial.jsx",
-                                        lineNumber: 45,
-                                        columnNumber: 7
-                                    }, this),
-                                    /*#__PURE__*/ _jsxDevRuntime.jsxDEV("li", {
-                                        children: [
-                                            "Each player can choose to either take the card on the stack, or take a card from the deck.",
-                                            /*#__PURE__*/ _jsxDevRuntime.jsxDEV("br", {
-                                            }, void 0, false, {
-                                                fileName: "src/Tutorial.jsx",
-                                                lineNumber: 53,
-                                                columnNumber: 8
-                                            }, this),
-                                            "If they choose to take a card from the deck, they have to either add that to their set or lay it out on the stack and pass on their turn"
-                                        ]
-                                    }, void 0, true, {
-                                        fileName: "src/Tutorial.jsx",
-                                        lineNumber: 50,
-                                        columnNumber: 7
-                                    }, this),
-                                    /*#__PURE__*/ _jsxDevRuntime.jsxDEV("li", {
-                                        children: [
-                                            "If the player chooses to take a card, they need to add it to their set and choose another card that they would like to drop",
-                                            /*#__PURE__*/ _jsxDevRuntime.jsxDEV("br", {
-                                            }, void 0, false, {
-                                                fileName: "src/Tutorial.jsx",
-                                                lineNumber: 62,
-                                                columnNumber: 8
-                                            }, this),
-                                            "The card dropped is placed on the stack of cards"
-                                        ]
-                                    }, void 0, true, {
-                                        fileName: "src/Tutorial.jsx",
-                                        lineNumber: 58,
-                                        columnNumber: 7
-                                    }, this)
-                                ]
-                            }, void 0, true, {
-                                fileName: "src/Tutorial.jsx",
-                                lineNumber: 40,
-                                columnNumber: 6
-                            }, this),
-                            "If you already know rummy, Equals will be easy to play. In Rummy, cards need to be arranged in sets of 3 and 4.",
-                            /*#__PURE__*/ _jsxDevRuntime.jsxDEV("br", {
-                            }, void 0, false, {
-                                fileName: "src/Tutorial.jsx",
-                                lineNumber: 68,
-                                columnNumber: 6
-                            }, this),
-                            "In Equals, you only receive 3 or 5 cards, and you have to ensure that they add up to 0",
-                            /*#__PURE__*/ _jsxDevRuntime.jsxDEV("br", {
-                            }, void 0, false, {
-                                fileName: "src/Tutorial.jsx",
-                                lineNumber: 71,
-                                columnNumber: 6
-                            }, this),
-                            "Each card"
-                        ]
-                    }, void 0, true, {
-                        fileName: "src/Tutorial.jsx",
-                        lineNumber: 39,
-                        columnNumber: 5
-                    }, this)
-                ]
-            }, void 0, true, {
-                fileName: "src/Tutorial.jsx",
-                lineNumber: 33,
-                columnNumber: 4
-            }, this),
-            /*#__PURE__*/ _jsxDevRuntime.jsxDEV("div", {
-                id: "know-rummy",
-                children: /*#__PURE__*/ _jsxDevRuntime.jsxDEV("sub", {
-                    children: [
-                        "If you don't remember how to play Rummy, read through the",
-                        " ",
-                        /*#__PURE__*/ _jsxDevRuntime.jsxDEV("a", {
-                            href: "#dont-know-rummy",
-                            children: "previous section"
-                        }, void 0, false, {
-                            fileName: "src/Tutorial.jsx",
-                            lineNumber: 79,
-                            columnNumber: 6
-                        }, this)
-                    ]
-                }, void 0, true, {
-                    fileName: "src/Tutorial.jsx",
-                    lineNumber: 77,
-                    columnNumber: 5
-                }, this)
+            /*#__PURE__*/ _jsxDevRuntime.jsxDEV("object", {
+                width: "100%",
+                height: "80%",
+                data: _tutorialPdfDefault.default,
+                type: "application/pdf"
             }, void 0, false, {
                 fileName: "src/Tutorial.jsx",
-                lineNumber: 76,
+                lineNumber: 17,
                 columnNumber: 4
             }, this)
         ]
     }, void 0, true, {
         fileName: "src/Tutorial.jsx",
-        lineNumber: 5,
+        lineNumber: 7,
         columnNumber: 3
     }, this));
 }
@@ -44628,6 +43606,44 @@ $RefreshReg$(_c, "Tutorial");
   window.$RefreshReg$ = prevRefreshReg;
   window.$RefreshSig$ = prevRefreshSig;
 }
-},{"react/jsx-dev-runtime":"iTorj","react":"21dqq","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","@parcel/transformer-react-refresh-wrap/lib/helpers/helpers.js":"km3Ru"}]},["kn9T2","1SYPb","d8Dch"], "d8Dch", "parcelRequire86ed")
+},{"react/jsx-dev-runtime":"iTorj","react":"21dqq","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","@parcel/transformer-react-refresh-wrap/lib/helpers/helpers.js":"km3Ru","url:./tutorial.pdf":"jhasU","react-router-dom":"fdOAw"}],"jhasU":[function(require,module,exports) {
+module.exports = require('./helpers/bundle-url').getBundleURL('byUka') + "tutorial.82f2667b.pdf" + "?" + Date.now();
+
+},{"./helpers/bundle-url":"lgJ39"}],"lgJ39":[function(require,module,exports) {
+"use strict";
+var bundleURL = {
+};
+function getBundleURLCached(id) {
+    var value = bundleURL[id];
+    if (!value) {
+        value = getBundleURL();
+        bundleURL[id] = value;
+    }
+    return value;
+}
+function getBundleURL() {
+    try {
+        throw new Error();
+    } catch (err) {
+        var matches = ('' + err.stack).match(/(https?|file|ftp):\/\/[^)\n]+/g);
+        if (matches) // The first two stack frames will be this function and getBundleURLCached.
+        // Use the 3rd one, which will be a runtime in the original bundle.
+        return getBaseURL(matches[2]);
+    }
+    return '/';
+}
+function getBaseURL(url) {
+    return ('' + url).replace(/^((?:https?|file|ftp):\/\/.+)\/[^/]+$/, '$1') + '/';
+} // TODO: Replace uses with `new URL(url).origin` when ie11 is no longer supported.
+function getOrigin(url) {
+    var matches = ('' + url).match(/(https?|file|ftp):\/\/[^/]+/);
+    if (!matches) throw new Error('Origin not found');
+    return matches[0];
+}
+exports.getBundleURL = getBundleURLCached;
+exports.getBaseURL = getBaseURL;
+exports.getOrigin = getOrigin;
+
+},{}]},["kn9T2","1SYPb","d8Dch"], "d8Dch", "parcelRequire86ed")
 
 //# sourceMappingURL=index.b4b6dfad.js.map

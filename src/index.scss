@@ -240,4 +240,16 @@ code {
 
 #tutorial {
 	// font-family: Georgia, "Times New Roman", Times, serif;
+	height: 100vh;
+
+	object {
+		height: 100%;
+	}
+}
+
+.noStyle {
+	text-decoration: none;
+	color: inherit;
+	margin: 1em;
+	padding-bottom: 1em;
 }

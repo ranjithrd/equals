@@ -10,7 +10,7 @@ import {
 	push,
 	remove,
 } from "firebase/database"
-import { Equals } from "./equals.js"
+import { Equals } from "../lib/equals.js"
 
 export async function initialise() {
 	const firebaseConfig = {
@@ -95,7 +95,7 @@ export async function addPlayer(code, playerName) {
 }
 
 export async function updateGame(code, data) {
-    console.log("UPDATING FIREBASE...")
+	console.log("UPDATING FIREBASE...")
 	const db = getDatabase()
 	const r = ref(db, `/games/${code}`)
 	await set(r, data)

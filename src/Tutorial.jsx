@@ -1,14 +1,27 @@
 import React from "react"
+import { Link } from "react-router-dom"
+import tutorialPdf from "url:./tutorial.pdf"
 
 function Tutorial() {
 	return (
 		<main id="tutorial">
 			<div>
+				<small>
+					<Link to="/">Back home</Link>
+				</small>
+                <br />
 				<sub>How to play</sub>
 				<h2>Equals</h2>
 			</div>
 
-			<div>
+			<object
+				width="100%"
+				height="80%"
+				data={tutorialPdf}
+				type="application/pdf"
+			></object>
+
+			{/*<div>
 				<h3>Parts</h3>
 				<p>
 					Equals consists of:
@@ -78,7 +91,7 @@ function Tutorial() {
 					If you don't remember how to play Rummy, read through the{" "}
 					<a href="#dont-know-rummy">previous section</a>
 				</sub>
-			</div>
+    </div> */}
 		</main>
 	)
 }

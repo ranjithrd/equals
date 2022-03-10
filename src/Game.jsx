@@ -9,7 +9,7 @@ import {
 	updateGame,
 	deleteGame,
 } from "./firebase.js"
-import { Equals } from "./equals.js"
+import { Equals } from "../lib/equals.js"
 import Player from "./Player.jsx"
 
 function copyInstance(original) {
@@ -33,57 +33,73 @@ function Game({}) {
 	const [loaded, setLoaded] = useState(false)
 	const [localState, setLocalState] = useState("schedule")
 	const [initialized, setInitialized] = useState(false)
+	const [error, setError] = useState("")
+	const [gameStarted, setGameStarted] = useState(false)
 
 	console.log("Game render")
 	console.log(loaded)
 
 	useEffect(() => {
 		;(async () => {
-			const playersData = await getGame(code)
-			if (playersData) {
-				if (!Object.values(playersData).includes(name)) {
-					addPlayer(code, name)
+			try {
+				console.log("Init")
+				const playersData = await getGame(code)
+				if (playersData) {
+					if (!Object.values(playersData).includes(name)) {
+						addPlayer(code, name)
+					}
+					setPlayers(Object.values(playersData))
+				} else {
+					return null
 				}
-				setPlayers(Object.values(playersData))
-			} else {
-				return null
+
+				const gameData = await getGameData(code)
+				if (gameData) {
+					setStarted(true)
+				}
+
+				setLoaded(true)
+
+				listenSch(code, (val) => {
+					setPlayers([...Object.values(val)])
+				})
+				listenGame(code, (val) => {
+					console.log("CHANGE IN FIREBASE.")
+					console.log(val)
+					if (val == null) {
+						return
+					}
+					if (!initialized && val) {
+						setInitialized(true)
+					}
+					if (!started && val) {
+						setStarted(true)
+					}
+					if (
+						JSON.parse(val).initialized &&
+						JSON.parse(val).PLAYERS.length === players.length
+					) {
+						setInitialized(true)
+					}
+					Engine.update(val)
+				})
+				Engine.listen(
+					() => {
+						console.log("CHANGE IN ENGINE...")
+						console.log("New Engine Data:")
+						console.log(Engine.exportData())
+						updateGame(code, JSON.stringify(Engine.exportData()))
+					},
+					() => {
+						console.log("CHANGE IN RENDER...")
+						console.log("New Engine Data:")
+						console.log(Engine.exportData())
+						setData(copyInstance(Engine))
+					}
+				)
+			} catch (error) {
+				setError(error)
 			}
-
-			const gameData = await getGameData(code)
-			if (gameData) {
-				setStarted(true)
-			}
-
-			setLoaded(true)
-
-			listenSch(code, (val) => {
-				setPlayers([...Object.values(val)])
-			})
-			listenGame(code, (val) => {
-				console.log("CHANGE IN FIREBASE.")
-				console.log(val)
-				if (
-					JSON.parse(val).initialized &&
-					JSON.parse(val).PLAYERS.length === players.length
-				) {
-					setInitialized(true)
-				}
-				Engine.update(val)
-			})
-			Engine.listen(
-				() => {
-					console.log("CHANGE IN ENGINE...")
-					console.log("New Engine Data:")
-					console.log(Engine.exportData())
-					updateGame(code, JSON.stringify(Engine.exportData()))
-				},
-				() => {
-					console.log("CHANGE IN RENDER...")
-					console.log("New Engine Data:")
-					console.log(Engine.exportData())
-					setData(copyInstance(Engine))
-				}
-			)
 		})()
 	}, [code, localState])
 
@@ -99,6 +115,8 @@ function Game({}) {
 			clearInterval(i)
 		}
 	}, [])
+
+	console.log("Game has started?", started)
 
 	if (codeNum < 100_000 || codeNum > 999_999) {
 		return (
@@ -121,7 +139,7 @@ function Game({}) {
 	console.log(data.DATA.PLAYERS.length)
 	console.log(players.length)
 	console.log(initialized)
-	if (data.DATA.PLAYERS.length !== players.length) {
+	if (started && data.DATA.PLAYERS.length !== players.length) {
 		return (
 			<main>
 				<p>Initializing...</p>
@@ -133,9 +151,18 @@ function Game({}) {
 		Engine = new Equals([...players])
 		Engine.initialize()
 		const exportedData = Engine.exportData()
-		await updateGame(code, exportedData)
+		await updateGame(code, JSON.stringify(exportedData))
 		setLocalState("game")
 		console.log("Started!")
+	}
+
+	if (error) {
+		return (
+			<main>
+				<h3>Error</h3>
+				<pre>{error}</pre>
+			</main>
+		)
 	}
 
 	if (!started) {

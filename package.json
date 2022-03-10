@@ -1,8 +1,6 @@
 {
 	"name": "game",
 	"version": "1.0.0",
-	"main": "index.js",
-	"license": "MIT",
 	"scripts": {
 		"dev": "parcel serve src/index.html",
 		"build": "parcel build src/index.html"
@@ -21,5 +19,8 @@
 		"@parcel/transformer-sass": "2.3.2",
 		"parcel": "^2.3.2"
 	},
-	"type": "module"
+	"type": "module",
+	"staticFiles": {
+		"staticOutPath": "static"
+	}
 }
