@@ -1,5 +1,5 @@
 {
-	"name": "game",
+	"name": "equals",
 	"version": "1.0.0",
 	"scripts": {
 		"dev": "parcel serve src/index.html",
@@ -7,9 +7,7 @@
 	},
 	"dependencies": {
 		"@types/react-router-dom": "^5.3.3",
-		"cash-dom": "^8.1.1",
 		"firebase": "^9.6.8",
-		"on-change": "^4.0.0",
 		"react": "^17.0.2",
 		"react-dom": "^17.0.2",
 		"react-router": "^6.2.2",
