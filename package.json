@@ -17,7 +17,9 @@
 		"react-router-dom": "^6.2.2"
 	},
 	"devDependencies": {
+		"@parcel/packager-raw-url": "2.3.2",
 		"@parcel/transformer-sass": "2.3.2",
+		"@parcel/transformer-webmanifest": "2.3.2",
 		"parcel": "^2.2.1"
 	},
 	"type": "module",
