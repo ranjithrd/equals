@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700;900&display=swap");
+
 $primary: rgb(253, 233, 49);
 $bg: white;
 $text: black;
@@ -33,7 +35,8 @@ $gold: #f2cd07;
 
 html,
 button,
-input {
+input,
+* {
 	font-family: "Inter";
 }
 
