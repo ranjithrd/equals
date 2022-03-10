@@ -20,5 +20,8 @@
 	"type": "module",
 	"staticFiles": {
 		"staticOutPath": "static"
+	},
+	"alias": {
+		"process": false
 	}
 }
