@@ -1,0 +1,243 @@
+$primary: rgb(253, 233, 49);
+$bg: white;
+$text: black;
+$player-1: rgb(243, 183, 183);
+$player-2: rgb(98, 98, 252);
+
+$red: #8d2d2d;
+$blue: #1f1d83;
+$gold: #f2cd07;
+
+* {
+	box-sizing: border-box;
+	margin: 0;
+	padding: 0;
+}
+
+@mixin cardStyle($colour) {
+	border: 1em $colour solid !important;
+	color: $colour;
+	background-color: $bg;
+	&:hover,
+	&:focus {
+		background-color: $colour;
+		color: white;
+	}
+
+	&.deck {
+		outline: 1px $bg solid;
+		box-shadow: $colour 10px 0, $bg 11px 0, $colour 20px 0, $bg 21px 0,
+			$colour 28px 0;
+	}
+}
+
+html,
+button,
+input {
+	font-family: "Inter";
+}
+
+main {
+	display: flex;
+	flex-direction: column;
+	gap: 2em;
+	padding: 2em;
+}
+
+.player {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	// padding: 2em;
+
+	justify-content: center;
+	align-items: center;
+}
+
+.cell {
+	aspect-ratio: 1 / 1;
+}
+
+.red {
+	@include cardStyle($red);
+}
+
+.blue {
+	@include cardStyle($blue);
+}
+
+.gold {
+	@include cardStyle($gold);
+}
+
+.choice {
+	display: grid;
+	width: 100%;
+	grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+	justify-items: stretch;
+	align-content: center;
+	gap: 1em;
+}
+
+.cards {
+	display: grid;
+	width: 100%;
+	margin-top: 1em;
+	gap: 1em;
+
+	grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+
+	@media (max-width: 720px) {
+		grid-template-columns: repeat(2, 1fr);
+	}
+}
+
+.card {
+	width: 100%;
+	// height: 10em;
+
+	outline: none;
+	border: none;
+
+	display: flex;
+	flex-direction: column;
+
+	justify-content: center;
+	align-items: center;
+	text-align: center;
+
+	aspect-ratio: 167 / 252;
+	border-radius: 10px;
+
+	cursor: pointer;
+
+	h1 {
+		font-size: 4em;
+	}
+	h3 {
+		font-weight: 400;
+	}
+
+	&.disabled {
+		cursor: not-allowed !important;
+		filter: grayscale(30%);
+	}
+}
+
+.endButtons {
+	display: flex;
+	flex-direction: row;
+	gap: 1em;
+	width: 100%;
+	> * {
+		width: 100%;
+	}
+}
+
+button:not(.card) {
+	outline: none;
+	box-shadow: none;
+	background-color: $bg;
+	border: 3px $text solid;
+	color: $text;
+	padding: 1em;
+	font-weight: bold;
+	font-size: 1em;
+	cursor: pointer;
+
+	&:hover {
+		background-color: $text;
+		color: $bg;
+	}
+}
+
+#end {
+	margin-top: 2em;
+	height: 100%;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	gap: 0.8em;
+}
+
+table {
+	border-collapse: collapse;
+	table-layout: auto;
+	width: 100%;
+	// margin-top: 1em;
+}
+
+table,
+thead,
+tr,
+td,
+th,
+tbody {
+	border: 3px solid black;
+	text-align: left;
+}
+
+td,
+th {
+	padding: 8px;
+}
+
+.spacer {
+	height: 1em;
+}
+
+.wide {
+	width: 100%;
+}
+
+#score {
+	padding: 4em;
+}
+
+.round {
+	border-radius: 10px;
+}
+
+.nocolour {
+	background-color: $bg;
+	border: $text 2px solid;
+	color: $text;
+}
+
+#home {
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+	height: 100vh;
+}
+
+a {
+	color: blue;
+}
+
+form {
+	display: flex;
+	flex-direction: column;
+	gap: 1em;
+
+	input {
+		padding: 1.4em;
+		text-align: center;
+		font-size: 1em;
+	}
+}
+
+code {
+	font-size: 2em;
+}
+
+#tutorial > div {
+	p {
+		display: block;
+	}
+}
+
+#tutorial {
+	// font-family: Georgia, "Times New Roman", Times, serif;
+}
