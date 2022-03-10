@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
 import Card from "./Card"
+import { deleteGame } from "./firebase"
 
-function Player({ state, player, engine }) {
+function Player({ state, player, engine, code }) {
 	const [chooseCard, setChooseCard] = useState(false)
 	const [waiting, setWaiting] = useState("none")
 	const [disabledStack, setDisabledStack] = useState(false)
@@ -58,6 +59,7 @@ function Player({ state, player, engine }) {
 									interact(player, "pass")
 									setWaiting("none")
 									setChooseCard(false)
+									setDisabledStack(false)
 								}}
 							>
 								Pass
@@ -109,6 +111,7 @@ function Player({ state, player, engine }) {
 						<button
 							onClick={() => {
 								interact(player, "final")
+								deleteGame(code)
 							}}
 						>
 							End Game
@@ -192,6 +195,7 @@ function Player({ state, player, engine }) {
 	}
 
 	console.log(playerData.filter((card) => card[0] === 0).length > 0)
+	console.log(engine)
 
 	return (
 		<div className="player">

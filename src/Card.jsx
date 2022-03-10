@@ -1,4 +1,4 @@
-import React, { useState } from "react"
+import React, { useEffect, useState } from "react"
 
 function Card({ caption, value, onClick, disabled, deck, disableStack }) {
 	const [showDeck, setShowDeck] = useState(deck)
@@ -18,6 +18,10 @@ function Card({ caption, value, onClick, disabled, deck, disableStack }) {
 			colour = "Blue"
 			break
 	}
+
+	useEffect(() => {
+		setShowDeck(deck)
+	}, [value, deck])
 
 	return (
 		<button

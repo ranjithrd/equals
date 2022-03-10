@@ -4,17 +4,20 @@ import { create, getGame } from "./firebase"
 
 function Home() {
 	const [error, setError] = useState("")
+	const [createError, setCreateError] = useState("")
 
 	const navigate = useNavigate()
 
 	async function handleCreate(e) {
 		e.preventDefault()
 
+		
 		const name = e.target.name.value
 		if (!name || name.trimLeft().trimRight() == "") {
 			return
 		}
-
+		
+		setCreateError("Loading...")
 		const newCode = await create(name)
 
 		navigate(`/${newCode}/${name}`)
@@ -33,7 +36,7 @@ function Home() {
 				<form
 					onSubmit={async (e) => {
 						e.preventDefault()
-						setError("")
+						setError("Loading...")
 						const n = parseInt(e.target.code.value)
 						if (n < 100_000 || n > 999_999) {
 							setError("Invalid code. Please try again.")
@@ -87,6 +90,7 @@ function Home() {
 						required
 					/>
 					<button type="submit">Create a new game</button>
+					<p>{createError}</p>
 				</form>
 			</main>
 			<a href="https://ranjithrd.github.io" className="noStyle">

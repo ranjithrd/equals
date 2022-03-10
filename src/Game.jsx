@@ -154,6 +154,7 @@ function Game({}) {
 		await updateGame(code, JSON.stringify(exportedData))
 		setLocalState("game")
 		console.log("Started!")
+		window.location.reload()
 	}
 
 	if (error) {
@@ -177,10 +178,9 @@ function Game({}) {
 				<h3>Add friends with this code</h3>
 				<code>{code}</code>
 				<div className="spacer"></div>
-				<p>Players</p>
 				<table>
 					<thead>
-						<th>Player</th>
+						<th>Players</th>
 					</thead>
 					<tbody>
 						{players.map((p) => (
@@ -220,7 +220,13 @@ function Game({}) {
 				</button>
 			</div>
 			{/*JSON.stringify(data)*/}
-			<Player state={data} engine={Engine} player={name} key={name} />
+			<Player
+				state={data}
+				engine={Engine}
+				player={name}
+				key={name}
+				code={code}
+			/>
 		</main>
 	)
 }
