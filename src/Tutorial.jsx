@@ -1,6 +1,6 @@
 import React from "react"
 import { Link } from "react-router-dom"
-import tutorialPdf from "url:./tutorial.pdf"
+import tutorialPdf from "url:/static/tutorial.pdf"
 
 function Tutorial() {
 	return (
@@ -9,9 +9,11 @@ function Tutorial() {
 				<small>
 					<Link to="/">Back home</Link>
 				</small>
-                <br />
-				<sub>How to play</sub>
+				<br />
 				<h2>Equals</h2>
+				<a href={tutorialPdf} target="_blank">
+					View PDF in another page
+				</a>
 			</div>
 
 			<object
